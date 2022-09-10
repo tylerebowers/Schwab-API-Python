@@ -1,12 +1,30 @@
-# https://developer.tdameritrade.com/movers/apis
+"""
+APIs for Movers
+https://developer.tdameritrade.com/movers/apis
+"""
 import requests
 from variables import credentials
 
 
-def getMovers(index, direction, change):  # Working
+def getMovers(index, **kwargs):  # Working
+    args = ["direction", "change"]
+    params = {}
+    for key, value in kwargs.items():
+        if key in args: params[key] = value
     return requests.get('https://api.tdameritrade.com/v1/marketdata/' + index + '/movers',
-                        params={'direction': direction, 'change': change},
+                        params=params,
                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+
+
+def examples():
+    print('-----------------------------')
+    print("Examples for: api-movers")
+    print('-----------------------------')
+    print('getMovers(index, direction, change)')
+    print('getQuotes("$DJI", "up", "percent")')
+    print(getMovers("$DJI", "up", "percent"))
+    print('-----------------------------')
+    return
 
 """
 direction options: # To return movers with the specified directions of up or down
