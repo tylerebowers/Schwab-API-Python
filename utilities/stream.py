@@ -5,6 +5,8 @@ import urllib
 from datetime import datetime
 import websockets
 from variables import credentials
+from threading import Thread
+from window_terminal import WindowTerminal
 
 requestId = 0
 logging = True
@@ -97,11 +99,20 @@ def log(requestId, sentData, receivedData):  # NOT WORKING
 
 async def startStream():
     websocketUrl = "wss://" + credentials.streamerConnectionInfo.get('streamerSocketUrl') + "/ws"
-    async with websockets.connect(websocketUrl) as websocket:
-        print("Sent")
-        await websocket.send(loginRequest(2))
-        print(await websocket.recv())
-        await websocket.send(subscribeRequest("AMD"))
-        while True:
-            print(await websocket.recv())
-        # need to add threading and something to LOGOUT()
+    streamOutput = WindowTerminal.create_window()
+    streamOutput.open()
+    try:
+        async with websockets.connect(websocketUrl) as websocket:
+            await websocket.send(loginRequest(2))
+            streamOutput.print(await websocket.recv())
+            await websocket.send(subscribeRequest("AMD"))
+            while True:
+                streamOutput.print(await websocket.recv())
+    except KeyboardInterrupt:
+        print("Interrupted execution by user.")
+        websocket.stop_ws()  # change to send logout!
+        exit(0)
+    except Exception as excep:
+        print("Exception: {}. continuing...".format(excep))
+        pass
+
