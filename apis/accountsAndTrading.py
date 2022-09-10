@@ -77,7 +77,7 @@ def replaceOrder(orderId, data):
                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
 
 
-def createSavedOrder(data):  # FIX
+def createSavedOrder(data): 
     return requests.post('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/savedorders',
                          data=data,
                          headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
@@ -98,14 +98,12 @@ def getSavedOrdersByPath():
                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
 
 
-# not tested
-def replaceSavedOrder(savedOrderId, data):  # FIX
+def replaceSavedOrder(savedOrderId, data): 
     return requests.put('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/savedorders/' + savedOrderId,
                         params=data,
                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
 
 
-# not tested
 def getAccount(**kwargs):
     args = ["fields"]
     params = {}
@@ -116,7 +114,6 @@ def getAccount(**kwargs):
                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
 
 
-# not tested
 def getAccounts(**kwargs):
     args = ["fields"]
     params = {}
