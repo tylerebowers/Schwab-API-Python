@@ -7,6 +7,6 @@ from apis import priceHistory
 client.login()
 client.setupStream()
 print(quotes.getQuote('AMD'))
-print(priceHistory.getPriceHistory('AMD', 'day', '1', 'minute', '30', 'false'))
+#Steaming will be updated to make usage more logical in the near future (hint: threading)
 asyncio.run(stream.startStream())
 
