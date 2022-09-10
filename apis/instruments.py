@@ -1,4 +1,7 @@
-# https://developer.tdameritrade.com/instruments/apis
+"""
+APIs for instruments
+https://developer.tdameritrade.com/instruments/apis
+"""
 import requests
 from variables import credentials
 
