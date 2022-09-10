@@ -1,13 +1,17 @@
+"""
+APIs for User Info and Preferences
+https://developer.tdameritrade.com/user-principal/apis
+"""
 import requests
 from variables import credentials
 
 
-def getPreferences():  # Working
+def getPreferences():
     return requests.get('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/preferences',
                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
 
 
-def getStreamerSubscriptionKeys():  # Working
+def getStreamerSubscriptionKeys():
     response = requests.get('https://api.tdameritrade.com/v1/userprincipals/streamersubscriptionkeys',
                             params={'accountIds': credentials.accountNumber},
                             headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
@@ -15,33 +19,19 @@ def getStreamerSubscriptionKeys():  # Working
     # example of what is returned: {"keys": [{"key": "c7fb2_this_is_not_a_real_key_6c169b"}]}
 
 
-def getUserPrincipals(fields=""):  # Working
-    # fields is a list of what to return; options are: streamerSubscriptionKeys, streamerConnectionInfo, preferences, surrogateIds
+def getUserPrincipals(**kwargs):  # fields is a list of what to return; options are: streamerSubscriptionKeys, streamerConnectionInfo, preferences, surrogateIds
+    args = ["fields"]
+    params = {}
+    for key, value in kwargs.items():
+        if key in args: params[key] = value
     return requests.get('https://api.tdameritrade.com/v1/userprincipals',
-                        params={'fields': fields},
+                        params=params,
                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
 
 
-def updatePreferences(expressTrading, directOptionsRouting, directEquityRouting, defaultEquityOrderLegInstruction,
-                      defaultEquityOrderType, defaultEquityOrderPriceLinkType, defaultEquityOrderDuration,
-                      defaultEquityOrderMarketSession, defaultEquityQuantity, mutualFundTaxLotMethod,
-                      optionTaxLotMethod, equityTaxLotMethod, defaultAdvancedToolLaunch,
-                      authTokenTimeout):  # DOES NOT WORK (for some reason) USE THROUGH TD DEV WEBSITE!
+def updatePreferences(data):  # I could only get this to work through the dev website for some reason
     return requests.put('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/preferences',
-                        data={"expressTrading": expressTrading,
-                              "directOptionsRouting": False,
-                              "directEquityRouting": False,
-                              "defaultEquityOrderLegInstruction": defaultEquityOrderLegInstruction,
-                              "defaultEquityOrderType": defaultEquityOrderType,
-                              "defaultEquityOrderPriceLinkType": defaultEquityOrderPriceLinkType,
-                              "defaultEquityOrderDuration": defaultEquityOrderDuration,
-                              "defaultEquityOrderMarketSession": defaultEquityOrderMarketSession,
-                              "defaultEquityQuantity": 0,
-                              "mutualFundTaxLotMethod": mutualFundTaxLotMethod,
-                              "optionTaxLotMethod": optionTaxLotMethod,
-                              "equityTaxLotMethod": equityTaxLotMethod,
-                              "defaultAdvancedToolLaunch": defaultAdvancedToolLaunch,
-                              "authTokenTimeout": authTokenTimeout},
+                        data=data,
                         headers={'Authorization': 'Bearer ' + credentials.accessToken,
                                  'Content-Type': 'application/json'})
 
