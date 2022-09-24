@@ -4,7 +4,7 @@ https://developer.tdameritrade.com/price-history/apis
 """
 import requests
 from datetime import datetime
-from variables import credentials
+from variables import globals
 
 
 def getPriceHistory(ticker, **kwargs):
@@ -14,4 +14,4 @@ def getPriceHistory(ticker, **kwargs):
         if key in args: params[key] = value
     return requests.get('https://api.tdameritrade.com/v1/marketdata/' + ticker + '/pricehistory',
                         params=params,
-                        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
