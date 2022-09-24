@@ -3,7 +3,7 @@ APIs for Movers
 https://developer.tdameritrade.com/movers/apis
 """
 import requests
-from variables import credentials
+from variables import globals
 
 
 def getMovers(index, **kwargs):  # Working
@@ -13,7 +13,7 @@ def getMovers(index, **kwargs):  # Working
         if key in args: params[key] = value
     return requests.get('https://api.tdameritrade.com/v1/marketdata/' + index + '/movers',
                         params=params,
-                        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def examples():
