@@ -4,7 +4,7 @@ https://developer.tdameritrade.com/quotes/apis
 """
 
 import requests
-from variables import credentials
+from variables import globals
 
 
 def getQuotes(tickerList):  # pass in a list tickerList=["AMD","APPL"] and receive a real-time quote on the tickers in the list.
