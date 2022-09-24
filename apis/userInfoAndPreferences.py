@@ -3,18 +3,18 @@ APIs for User Info and Preferences
 https://developer.tdameritrade.com/user-principal/apis
 """
 import requests
-from variables import credentials
+from variables import globals
 
 
 def getPreferences():
-    return requests.get('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/preferences',
-                        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+    return requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def getStreamerSubscriptionKeys():
     response = requests.get('https://api.tdameritrade.com/v1/userprincipals/streamersubscriptionkeys',
-                            params={'accountIds': credentials.accountNumber},
-                            headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+                            params={'accountIds': globals.accountNumber},
+                            headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
     return response
     # example of what is returned: {"keys": [{"key": "c7fb2_this_is_not_a_real_key_6c169b"}]}
 
@@ -26,13 +26,13 @@ def getUserPrincipals(**kwargs):  # fields is a list of what to return; options 
         if key in args: params[key] = value
     return requests.get('https://api.tdameritrade.com/v1/userprincipals',
                         params=params,
-                        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def updatePreferences(data):  # I could only get this to work through the dev website for some reason
-    return requests.put('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/preferences',
+    return requests.put('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
                         data=data,
-                        headers={'Authorization': 'Bearer ' + credentials.accessToken,
+                        headers={'Authorization': 'Bearer ' + globals.accessToken,
                                  'Content-Type': 'application/json'})
 
 
