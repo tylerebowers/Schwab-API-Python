@@ -4,48 +4,48 @@ https://developer.tdameritrade.com/watchlist/apis
 """
 
 import requests
-from variables import credentials
+from variables import globals
 
 
 # not tested
 def createWatchlist(data):  # FIX
-    return requests.post('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/watchlists',
+    return requests.post('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists',
                          data=data,
-                         headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+                         headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def deleteWatchlist(watchListId):  # FIX
     return requests.delete(
-        'https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/watchlists/' + watchListId,
-        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+        'https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists/' + watchListId,
+        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def getWatchlist(watchListId):  # FIX
     return requests.get(
-        'https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/watchlists/' + watchListId,
-        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+        'https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists/' + watchListId,
+        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def getWatchlistsForMultipleAccounts():  # FIX
     return requests.get('https://api.tdameritrade.com/v1/accounts/watchlists',
-                        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def getWatchlistsForSingleAccount():  # FIX
-    return requests.get('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/watchlists',
-                        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+    return requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists',
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def replaceWatchlist(watchListId, data):  # FIX
-    return requests.post('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/watchlists/' + watchListId,
+    return requests.post('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists/' + watchListId,
         data=data,
-        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 def updateWatchlist(watchListId, data):  # FIX
-    return requests.patch('https://api.tdameritrade.com/v1/accounts/' + credentials.accountNumber + '/watchlists/' + watchListId,
+    return requests.patch('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists/' + watchListId,
         data=data,
-        headers={'Authorization': 'Bearer ' + credentials.accessToken}).json()
+        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
 '''
