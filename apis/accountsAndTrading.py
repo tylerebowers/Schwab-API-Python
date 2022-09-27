@@ -67,7 +67,7 @@ def getOrdersByQuery(**kwargs):
 
 def placeOrder(data):
     return requests.post('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/orders',
-                         data=data,
+                         json=data,
                          headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
@@ -79,7 +79,7 @@ def replaceOrder(orderId, data):
 
 def createSavedOrder(data):  # FIX
     return requests.post('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/savedorders',
-                         data=data,
+                         json=data,
                          headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
