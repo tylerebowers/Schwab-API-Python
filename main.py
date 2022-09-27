@@ -7,8 +7,8 @@ from time import sleep
 
 def main():  # these are some examples to get you started; remember to fill in globals.py
     print(quotes.getQuote('AMD'))
-    print(priceHistory.getPriceHistory('AMD', 'day', '1', 'minute', '30', 'false'))
-    stream.send(levelOne.quoteRequest("AMD"))
+    print(priceHistory.getPriceHistory('AMD', periodType='day', period='1', frequencyType='minute', frequency='30', needExtendedHoursData='false'))
+    stream.send(levelOne.quoteRequest("AMD", "3"))
     sleep(30)
     stream.send(stream.logoutRequest())
 
