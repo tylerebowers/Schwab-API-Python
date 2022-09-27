@@ -10,7 +10,7 @@ from variables import globals
 # not tested
 def createWatchlist(data):  # FIX
     return requests.post('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists',
-                         data=data,
+                         json=data,
                          headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
@@ -38,7 +38,7 @@ def getWatchlistsForSingleAccount():  # FIX
 
 def replaceWatchlist(watchListId, data):  # FIX
     return requests.post('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/watchlists/' + watchListId,
-        data=data,
+        json=data,
         headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
 
 
