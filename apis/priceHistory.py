@@ -3,15 +3,17 @@ APIs for Price History
 https://developer.tdameritrade.com/price-history/apis
 """
 import requests
-from datetime import datetime
-from variables import globals
+from modules import globals, utilities, user
 
 
 def getPriceHistory(ticker, **kwargs):
+    user.checkTokens()
     args = ["periodType", "period", "frequencyType", "frequency", "endDate", "startDate", "needExtendedHoursData"]
-    params = {}
-    for key, value in kwargs.items():
-        if key in args: params[key] = value
-    return requests.get('https://api.tdameritrade.com/v1/marketdata/' + ticker + '/pricehistory',
+    params = utilities.kwargsHandler(args, kwargs)
+    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/marketdata/' + ticker + '/pricehistory',
                         params=params,
-                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}))
+
+
+
+

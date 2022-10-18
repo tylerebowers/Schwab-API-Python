@@ -3,19 +3,19 @@ APIs for Transaction History
 https://developer.tdameritrade.com/transaction-history/apis
 """
 import requests
-from variables import globals
+from modules import globals, utilities, user
 
 
 def getTransaction(transactionId):
-    return requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/transactions/' + transactionId,
-        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
+    user.checkTokens()
+    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/transactions/' + transactionId,
+        headers={'Authorization': 'Bearer ' + globals.accessToken}))
 
 
 def getTransactions(**kwargs):
+    user.checkTokens()
     args = ["type", "symbol", "startDate", "endDate"]
-    params = {}
-    for key, value in kwargs.items():
-        if key in args: params[key] = value
-    return requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/transactions',
+    params = utilities.kwargsHandler(args, kwargs)
+    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/transactions',
                         params=params,
-                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}))

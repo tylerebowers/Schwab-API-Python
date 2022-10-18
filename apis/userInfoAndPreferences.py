@@ -3,37 +3,38 @@ APIs for User Info and Preferences
 https://developer.tdameritrade.com/user-principal/apis
 """
 import requests
-from variables import globals
+from modules import globals, utilities, user
 
 
 def getPreferences():
-    return requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
-                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
+    user.checkTokens()
+    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}))
 
 
 def getStreamerSubscriptionKeys():
-    response = requests.get('https://api.tdameritrade.com/v1/userprincipals/streamersubscriptionkeys',
+    user.checkTokens()
+    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/userprincipals/streamersubscriptionkeys',
                             params={'accountIds': globals.accountNumber},
-                            headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
-    return response
+                            headers={'Authorization': 'Bearer ' + globals.accessToken}))
     # example of what is returned: {"keys": [{"key": "c7fb2_this_is_not_a_real_key_6c169b"}]}
 
 
 def getUserPrincipals(**kwargs):  # fields is a list of what to return; options are: streamerSubscriptionKeys, streamerConnectionInfo, preferences, surrogateIds
+    user.checkTokens()
     args = ["fields"]
-    params = {}
-    for key, value in kwargs.items():
-        if key in args: params[key] = value
-    return requests.get('https://api.tdameritrade.com/v1/userprincipals',
+    params = utilities.kwargsHandler(args, kwargs)
+    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/userprincipals',
                         params=params,
-                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}))
 
 
 def updatePreferences(data):  # I could only get this to work through the dev website for some reason
-    return requests.put('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
-                        data=data,
+    user.checkTokens()
+    return utilities.responseHandler(requests.put('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
+                        json=data,
                         headers={'Authorization': 'Bearer ' + globals.accessToken,
-                                 'Content-Type': 'application/json'})
+                                 'Content-Type': 'application/json'}))
 
 
 """  # these are what could be put for "updatePreferences" in the dictionary

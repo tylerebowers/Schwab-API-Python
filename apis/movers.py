@@ -3,20 +3,20 @@ APIs for Movers
 https://developer.tdameritrade.com/movers/apis
 """
 import requests
-from variables import globals
+from modules import globals, utilities, user
 
 
 def getMovers(index, **kwargs):  # Working
+    user.checkTokens()
     args = ["direction", "change"]
-    params = {}
-    for key, value in kwargs.items():
-        if key in args: params[key] = value
-    return requests.get('https://api.tdameritrade.com/v1/marketdata/' + index + '/movers',
+    params = utilities.kwargsHandler(args, kwargs)
+    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/marketdata/' + index + '/movers',
                         params=params,
-                        headers={'Authorization': 'Bearer ' + globals.accessToken}).json()
+                        headers={'Authorization': 'Bearer ' + globals.accessToken}))
 
 
 def examples():
+    user.checkTokens()
     print('-----------------------------')
     print("Examples for: api-movers")
     print('-----------------------------')
