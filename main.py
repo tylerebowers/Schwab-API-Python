@@ -1,3 +1,8 @@
+"""
+This file is where all other apis are called
+Questions? You can find my contact info at tylerebowers.com
+__author__ = Tyler Bowers
+"""
 from apis import accountsAndTrading, authentication, instruments, marketHours, movers, optionChains, priceHistory, \
     quotes, transactionHistory, userInfoAndPreferences, watchlist
 from modules import globals, utilities, user
@@ -7,7 +12,8 @@ from time import sleep
 
 
 def main():
-
+    
+    # These are api examples:
     print(instruments.getInstrument('AMD'))
     print(instruments.getInstrument('007903107'))
     print(movers.getMovers("$DJI", direction="up", change="percent"))
@@ -15,19 +21,19 @@ def main():
     print(priceHistory.getPriceHistory('AMD', periodType='day', period='1', frequencyType='minute', frequency='30', needExtendedHoursData='false'))
     print(quotes.getQuote('AMD'))
     print(quotes.getQuotes(['AMD', "INTC"]))
+    
+    # This is an example of an order It is commented out so you dont accidentally run it!
     """
-    order = {'orderType': 'LIMIT', 'session': 'NORMAL', 'duration': 'DAY', 'orderStrategyType': 'SINGLE', 'price': '40.00',
+    order = {'orderType': 'LIMIT', 'session': 'NORMAL', 'duration': 'DAY', 'orderStrategyType': 'SINGLE', 'price': '30.00',
                  'orderLegCollection': [{'instruction': 'Buy', 'quantity': 1, 'instrument': {'symbol': 'NDAQ', 'assetType': 'EQUITY'}}]}
     print(accountsAndTrading.placeOrder(order))
-    
-    sleep(1)
 
     print(accountsAndTrading.getOrdersByPath())
 
     print(accountsAndTrading.cancelOrder("Order Number"))
     """
 
-    #for streaming
+    # These Commands are used for streaming (Keep in mind that the TD will close the stream if you arent subbed to anything)
     #stream.send(levelOne.quoteRequest("AMD", [0, 3, 8]))
     #stream.send(levelOne.optionRequest("AMD", [0, 4, 8, 10]))
     #sleep(30)
