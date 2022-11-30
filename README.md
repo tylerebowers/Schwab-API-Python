@@ -1,4 +1,5 @@
 # TD-Ameritrade-API-Python-Wrapper  
+NEXT UPDATE PLANNED NEAR END OF DECEMBER: big streaming rework.
 This is an (unofficial) wrapper to make using the TD Ameritrade API easier.   
 The idea is to make an easy to understand, highly-organized wrapper for the api.    
 What you need to do:      
