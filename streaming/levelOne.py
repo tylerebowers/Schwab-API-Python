@@ -2,29 +2,26 @@
 The "fields" variable is sent as a list
 
 """
-
-
-import json
 from streaming import utilities
-from modules import globals
 
 
-def quoteRequest(ticker, fields):
-    globals.requestId += 1
-    request = {
-        "requests": [utilities.basicRequest(service="QUOTE", command="SUBS", parameters={"keys": ticker, "fields": utilities.listToString(fields)})]}
-    return json.dumps(request)
+def quote(keys, fields):
+    return utilities.SUBS("QUOTE", keys, fields)
 
 
-def optionRequest(ticker, fields):
-    globals.requestId += 1
-    request = {
-        "requests": [utilities.basicRequest(service="OPTION", command="SUBS", parameters={"keys": ticker, "fields": utilities.listToString(fields)})]}
-    return json.dumps(request)
+def option(keys, fields):
+    return utilities.SUBS("OPTION", keys, fields)
 
 
-def levelOne_FuturesRequest(ticker, fields):
-    globals.requestId += 1
-    request = {
-        "requests": [utilities.basicRequest(service="OPTION", command="SUBS", parameters={"keys": ticker, "fields": utilities.listToString(fields)})]}
-    return json.dumps(request)
+def futures(keys, fields):
+    return utilities.SUBS("LEVELONE_FUTURES", keys, fields)
+
+
+def forex(keys, fields):
+    return utilities.SUBS("LEVELONE_FOREX", keys, fields)
+
+
+def futures_options(keys, fields):
+    return utilities.SUBS("LEVELONE_FUTURES_OPTIONS", keys, fields)
+
+

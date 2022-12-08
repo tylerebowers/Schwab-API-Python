@@ -1,12 +1,10 @@
-import json
 import urllib
 from modules import globals
 from datetime import datetime
 from streaming import utilities
 
 
-def loginRequest(qosLevel=2):
-    globals.requestId += 1
+def login(qosLevel=2):
     credentialsDictionary = {
         "userid": globals.userPrincipals.get("accounts")[0].get("accountId"),
         "token": globals.streamerConnectionInfo.get("token"),
@@ -26,19 +24,12 @@ def loginRequest(qosLevel=2):
                   "version": "1.0",
                   "qoslevel": qosLevel
                   }
-    request = {"requests": [utilities.basicRequest(service="ADMIN", command="LOGIN", parameters=parameters)]}
-    return json.dumps(request)
+    return utilities.basicRequest(service="ADMIN", command="LOGIN", parameters=parameters)
 
 
-def logoutRequest():
-    globals.requestId += 1
-    request = {
-        "requests": [utilities.basicRequest(service="ADMIN", command="LOGOUT", parameters={})]}
-    return json.dumps(request)
+def logout():
+    return utilities.basicRequest(service="ADMIN", command="LOGOUT")
 
 
-def qosRequest(qosLevel):
-    globals.requestId += 1
-    request = {
-        "requests": [utilities.basicRequest(service="ADMIN", command="QOS", parameters={"qoslevel": qosLevel})]}
-    return json.dumps(request)
+def qos(qosLevel):
+    return utilities.basicRequest(service="ADMIN", command="QOS", parameters={"qoslevel": qosLevel})
