@@ -5,7 +5,6 @@ This is an (unofficial) wrapper to make using the TD Ameritrade API easier.
 The idea is to make an easy to understand, highly-organized wrapper for the api.    
 What you need to do:      
 You need to fill in your credentials in the modules/globals.py file.  
-Install websockets, requests, and window-terminal (using pip)      
+Install websockets, requests, pycron, and window-terminal (using pip)      
 main.py is where all your code should go.  
-api usage is complete but only ~90% tested   
-streaming is not fully complete (basic streaming works).    
+api and streaming should be complete however they are not fully tested.        
