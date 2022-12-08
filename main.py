@@ -32,23 +32,31 @@ def main():
 
     print(accountsAndTrading.cancelOrder("Order Number"))
     """
-
+    """
     # These Commands are used for streaming (Keep in mind that the TD will close the stream if you arent subbed to anything)
-    #stream.send(levelOne.quoteRequest("AMD", [0, 3, 8]))
-    #stream.send(levelOne.optionRequest("AMD", [0, 4, 8, 10]))
-    #sleep(30)
-    #stream.send(admin.logoutRequest())
+    stream.send(levelOne.quote(["META"], [0, 1, 2, 8]))
+    stream.send(levelOne.quote(["AMD", "INTC"], [0, 1, 2, 8]))
+    """
+    """
+    # if you want to enter your own commands while the stream is running
+    while True:
+        entered = input("Enter something to execute:\n")
+        try:
+            exec(entered)
+            print("Succeeded")
+        except Exception as error:
+            print(error)
+            print("There was an error in the command that you entered.")
+    """      
 
 
 if __name__ == '__main__':
-    streaming = False
-    user.login()
-    mainThread = Thread(target=main)
-    if streaming:
-        streamThread = Thread(target=stream.start)
-        streamThread.start()
-        sleep(2)
-    mainThread.start()
-    if streaming:
-        streamThread.join()
-    mainThread.join()
+    api.initialize()  # checks tokens & loads variables
+    # if globals.usingDatabase: database.initializeDatabase()
+    api.checkTokensDaemon()  # thread that automatically updates tokens
+    stream.startAutomatic()
+    globals.threads.append(threading.Thread(target=main))
+    for thread in globals.threads:
+        thread.start()
+    for thread in globals.threads:
+        thread.join()
