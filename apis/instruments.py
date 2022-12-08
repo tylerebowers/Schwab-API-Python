@@ -3,14 +3,14 @@ APIs for instruments
 https://developer.tdameritrade.com/instruments/apis
 """
 import requests
-from modules import globals, utilities, user
+from modules import globals, api
+from apis import utilities
 
 
 def searchInstruments(symbol, projection):
-    user.checkTokens()
-    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/instruments',
-                                                 params={'symbol': symbol, 'projection': projection},
-                                                 headers={'Authorization': 'Bearer ' + globals.accessToken}))
+    return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/instruments',
+                                                     params={'symbol': symbol, 'projection': projection},
+                                                     headers={'Authorization': 'Bearer ' + globals.accessToken}))
 
 
 """
@@ -24,6 +24,5 @@ fundamental: Returns fundamental data for a single instrument specified by exact
 
 
 def getInstrument(ticker):
-    user.checkTokens()
-    return utilities.responseHandler(requests.get('https://api.tdameritrade.com/v1/instruments/' + ticker,
-                                                 headers={'Authorization': 'Bearer ' + globals.accessToken}))
+    return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/instruments/' + ticker,
+                                                     headers={'Authorization': 'Bearer ' + globals.accessToken}))
