@@ -1,7 +1,7 @@
 """
 ##################################################
 This file stores variables to be used between python files.
-I have been thinking of renaming this file to cosmos.py.
+I have been thinking of renaming this file to universe.py since it covers all files.
 __author__  = Tyler Bowers
 ##################################################
 """
