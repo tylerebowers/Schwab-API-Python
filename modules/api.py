@@ -1,20 +1,22 @@
 """
 This file makes sure that the refresh and access tokens are up-to-date.
-import modules/user and use user.login() runs the checks
+import modules/user and use api.initialize() runs the checks
 Coded by Tyler Bowers on 6D/8M/2022Y
 Find my contact info and other projects at tylerebowers.com
 """
-import urllib
 import json
+import time
+import urllib
+import threading
 from modules import globals
-from apis import authentication
 from datetime import datetime
+from apis import authentication
 
 
-def login():
+def initialize():
     if len(globals.consumerKey) != 32:
-        print("Please check to make sure that you have your consumer key in modules/globals.py")
-        print("If you do have the key and this check is failing you can remove it in modules/user.py")
+        print("ERROR: Please check to make sure that you have your consumer key in modules/globals.py")
+        print("INFO: If you do have the key and this check is failing you can remove it in modules/api.py")
         quit()
     try:
         with open('modules/tokens.txt', 'r') as file:
@@ -24,31 +26,33 @@ def login():
             file.flush()
             file.close()
     except:
-        print("Error in reading from file.")
-        print("Please make sure that modules/tokens.txt exists and that your environment is setup correctly.")
+        print("ERROR: Error in reading from file.")
+        print(
+            "INFO: Please make sure that modules/tokens.txt exists and that your environment is setup correctly (ie running program from main.py).")
         quit()
-    print(accessTokenFileTime)
-    print(refreshTokenFileTime)
+    print("INFO: " + accessTokenFileTime)
+    print("INFO: " + refreshTokenFileTime)
     globals.accessTokenDateTime = datetime.strptime(accessTokenFileTime, "Access token last updated: %d/%m/%y %H:%M:%S")
-    globals.refreshTokenDateTime = datetime.strptime(refreshTokenFileTime, "Refresh token last updated: %d/%m/%y %H:%M:%S")
+    globals.refreshTokenDateTime = datetime.strptime(refreshTokenFileTime,
+                                                     "Refresh token last updated: %d/%m/%y %H:%M:%S")
     if (datetime.now() - globals.refreshTokenDateTime).days >= 89:
-        print("The refresh token has expired, please update.")
+        print("ERROR: The refresh token has expired, please update.")
         refreshTokenUpdate()
     elif (datetime.now() - globals.accessTokenDateTime).days >= 1 or (
             (datetime.now() - globals.accessTokenDateTime).seconds > ((globals.authTokenTimeout * 60) - 60)):
-        print("The access token has expired, updating automatically.")
+        print("INFO: The access token has expired, updating automatically.")
         accessTokenUpdate()
     else:
         globals.accessToken = tokenDictionary.get("access_token")
         globals.refreshToken = tokenDictionary.get("refresh_token")
-    print("Initialization Complete")
+    print("INFO: Initialization Complete")
 
 
 def refreshTokenUpdate():
-    print("Click to authenticate: " + "https://auth.tdameritrade.com/auth?response_type=code&redirect_uri=" +
+    print("INPUT: Click to authenticate: " + "https://auth.tdameritrade.com/auth?response_type=code&redirect_uri=" +
           urllib.parse.quote(globals.callbackUrl,
                              safe='') + "&client_id=" + globals.consumerKey + "%40AMER.OAUTHAP")
-    responseURL = input("After authorizing, wait for it to load (<2min) and paste the WHOLE url here: ")
+    responseURL = input("INPUT: After authorizing, wait for it to load (<1min) and paste the WHOLE url here: ")
     authCode = urllib.parse.unquote(responseURL.split("code=")[1])
     newTokens = postAccessTokenAutomated('authorization_code', authCode)
     globals.accessTokenDateTime = datetime.now()
@@ -61,7 +65,7 @@ def refreshTokenUpdate():
         file.close()
     globals.accessToken = newTokens.get("access_token")
     globals.refreshToken = newTokens.get("refresh_token")
-    print("Refresh and Access tokens updated")
+    print("INFO: Refresh and Access tokens updated")
 
 
 def accessTokenUpdate():
@@ -81,10 +85,11 @@ def accessTokenUpdate():
     globals.accessToken = dictionary.get("access_token")
     globals.refreshToken = dictionary.get("refresh_token")
     globals.accessTokenDateTime = datetime.now()
-    print("Access token updated")
+    print("INFO: Access token updated")
 
 
-def getTokensFromFile(requestType):  # access_token, refresh_token, scope, expires_in, refresh_token_expires_in, token_type
+def getTokensFromFile(
+        requestType):  # access_token, refresh_token, scope, expires_in, refresh_token_expires_in, token_type
     with open('modules/tokens.txt', 'r') as file:
         file.readline()
         file.readline()
@@ -108,7 +113,7 @@ def getTokensFromFile(requestType):  # access_token, refresh_token, scope, expir
             case "token_type":
                 return tokenDictionary.get("token_type")
             case _:
-                print("Invalid requestType ")
+                print("WARNING: Invalid requestType ")
 
 
 def postAccessTokenAutomated(grant_type, code):
@@ -122,11 +127,20 @@ def postAccessTokenAutomated(grant_type, code):
         return authentication.postAccessToken(data)
 
 
-def checkTokens():
+def checkTokensManual():
     if (datetime.now() - globals.refreshTokenDateTime).days > 89:
-        print("The refresh token has expired, please update.")
+        print("WARNING: The refresh token has expired, please update.")
         refreshTokenUpdate()
     elif (datetime.now() - globals.accessTokenDateTime).days >= 1 or (
-            (datetime.now() - globals.accessTokenDateTime).seconds > ((globals.authTokenTimeout * 60) - 60)):
-        print("The access token has expired, updating automatically.")
+            (datetime.now() - globals.accessTokenDateTime).seconds > ((globals.authTokenTimeout * 60) - 120)):
+        print("INFO: The access token has expired, updating automatically.")
         accessTokenUpdate()
+
+
+def checkTokensDaemon():
+    def _checkTokens():
+        while True:
+            checkTokensManual()
+            time.sleep(60)
+
+    globals.threads.append(threading.Thread(target=_checkTokens, daemon=True))
