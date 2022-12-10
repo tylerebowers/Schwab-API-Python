@@ -49,10 +49,11 @@ def main():
 
 if __name__ == '__main__':
     api.initialize()  # checks tokens & loads variables
-    # if globals.usingDatabase: database.initializeDatabase()
+    # if globals.usingDatabase: database.initializeDatabase() # database code is incomplete
     api.checkTokensDaemon()  # thread that automatically updates tokens
-    stream.startAutomatic()
-    globals.threads.append(threading.Thread(target=main))
+    stream.startAutomatic() # this starts the stream during market hours and stops it during non-market hours.
+    # stream.startManual() # this starts the stream immediately (only use one type of stream start)
+    globals.threads.append(threading.Thread(target=main)) # add the main thread to the list of threads to start
     for thread in globals.threads:
         thread.start()
     for thread in globals.threads:
