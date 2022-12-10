@@ -21,6 +21,8 @@ def main():
     print(priceHistory.getPriceHistory('AMD', periodType='day', period='1', frequencyType='minute', frequency='30', needExtendedHoursData='false'))
     print(quotes.getQuote('AMD'))
     print(quotes.getQuotes(['AMD', "INTC"]))
+    stream.send(levelOne.quote(["META"], [0, 1, 2, 8])) 
+    stream.send(levelOne.quote(["AMD", "INTC"], [0, 1, 2, 8]))
     
     # This is an example of an order It is commented out so you dont accidentally run it!
     """
@@ -31,11 +33,6 @@ def main():
     print(accountsAndTrading.getOrdersByPath())
 
     print(accountsAndTrading.cancelOrder("Order Number"))
-    """
-    """
-    # These Commands are used for streaming (Keep in mind that the TD will close the stream if you arent subbed to anything)
-    stream.send(levelOne.quote(["META"], [0, 1, 2, 8]))
-    stream.send(levelOne.quote(["AMD", "INTC"], [0, 1, 2, 8]))
     """
     """
     # if you want to enter your own commands while the stream is running
