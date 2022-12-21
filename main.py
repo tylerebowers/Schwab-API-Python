@@ -23,6 +23,9 @@ def main():
     print(quotes.getQuotes(['AMD', "INTC"]))
     stream.send(levelOne.quote(["META"], [0, 1, 2, 8])) #<--- whenever you send a stream sub you must always send 0.
     stream.send(levelOne.quote(["AMD", "INTC"], [0, 1, 2, 8]))   #<--- this sub overrides the one above it.
+    stream.send(levelOne.futures(["/ES"], [0, 1, 2, 8])) #<-- futures/forex/options do not override orther types of subs.
+    stream.send(levelOne.forex(["EUR/USD"], [0, 1, 2, 8]))
+    stream.send(levelOne.option(["AMD"], [0, 2, 3, 8])) #Options dont work yet for some reason, maybe you can fix it?
     
     # This is an example of an order It is commented out so you dont accidentally run it!
     """
