@@ -15,11 +15,11 @@ global ws
 
 
 def _setupStream():
-    if globals.streamerSubscriptionKey is None or globals.streamerConnectionInfo == {} or globals.userPrincipals == {}:
-        globals.streamerSubscriptionKey = userInfoAndPreferences.getStreamerSubscriptionKeys().get('keys')[0].get('key')
-        globals.streamerConnectionInfo = userInfoAndPreferences.getUserPrincipals(fields="streamerConnectionInfo").get(
-            'streamerInfo')
-        globals.userPrincipals = userInfoAndPreferences.getUserPrincipals()
+    #if globals.streamerSubscriptionKey is None or globals.streamerConnectionInfo == {} or globals.userPrincipals == {}:
+    globals.streamerSubscriptionKey = userInfoAndPreferences.getStreamerSubscriptionKeys().get('keys')[0].get('key')
+    globals.streamerConnectionInfo = userInfoAndPreferences.getUserPrincipals(fields="streamerConnectionInfo").get(
+        'streamerInfo')
+    globals.userPrincipals = userInfoAndPreferences.getUserPrincipals()
 
 
 async def _clientStart(qos=2):
@@ -57,8 +57,8 @@ async def _clientStart(qos=2):
             globals.streamIsActive = False
             print("ERROR: ", end="")
             print(error)
-            if (datetime.now() - startTimeStamp).seconds < 60:
-                print("ERROR: Stream not alive for more than 1 minute (would result in loop), exiting...")
+            if (datetime.now() - startTimeStamp).seconds < 30:
+                print("ERROR: Stream not alive for more than 30 seconds, exiting...")
                 break
             else:
                 globals.streamTerminal.print("WARNING: Connection lost to server, reconnecting...")
@@ -70,7 +70,6 @@ async def _send(toSend):
 
 
 def startManual():
-    _setupStream()
     globals.streamTerminal = WindowTerminal.create_window()
     globals.streamTerminal.open()
     def _manStart():
@@ -80,12 +79,12 @@ def startManual():
 
 
 def startAutomatic():
-    _setupStream()
     globals.streamTerminal = WindowTerminal.create_window()
     globals.streamTerminal.open()
     def _autoStart():
         while True:
             if pycron.is_now('* 9-19 * * mon-fri') and not globals.streamIsActive:
+                globals.streamIsActive = True
                 asyncio.run(_clientStart())
             time.sleep(60)
 
