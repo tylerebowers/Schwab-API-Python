@@ -21,8 +21,8 @@ def main():
     print(priceHistory.getPriceHistory('AMD', periodType='day', period='1', frequencyType='minute', frequency='30', needExtendedHoursData='false'))
     print(quotes.getQuote('AMD'))
     print(quotes.getQuotes(['AMD', "INTC"]))
-    stream.send(levelOne.quote(["META"], [0, 1, 2, 8])) 
-    stream.send(levelOne.quote(["AMD", "INTC"], [0, 1, 2, 8]))
+    stream.send(levelOne.quote(["META"], [0, 1, 2, 8])) #<--- whenever you send a stream sub you must always send 0.
+    stream.send(levelOne.quote(["AMD", "INTC"], [0, 1, 2, 8]))   #<--- this sub overrides the one above it.
     
     # This is an example of an order It is commented out so you dont accidentally run it!
     """
