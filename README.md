@@ -1,6 +1,7 @@
 # TD-Ameritrade-API-Python-Wrapper  
-EFFECTIVE 2023 TD IS MOVING TO SCHWAB; THE FUTURE OF THIS API IS UNKNOWN           
-^ due to this I am considering moving to Interactive Brokers.     
+EFFECTIVE 2023 TD IS MOVING TO SCHWAB, though the future should be safe for the api.
+Next update planned for release by the end of january it will focus on storing data is a postgresql database and a rewrite of this file's layout.
+
 This is an (unofficial) wrapper to make using the TD Ameritrade API easier.   
 The idea is to make an easy to understand, highly-organized wrapper for the api.    
 What you need to do:      
