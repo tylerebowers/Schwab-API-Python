@@ -8,4 +8,8 @@ What you need to do:
 You need to fill in your credentials in the modules/globals.py file.  
 Install websockets, requests, pycron, and window-terminal (using pip)      
 main.py is where all your code should go.  
-api and streaming should be complete however they are not fully tested.        
+api and streaming should be complete however they are not fully tested.      
+
+
+Example of streaming usage:
+![Picture of streaming](demos/streaming.jpg)
