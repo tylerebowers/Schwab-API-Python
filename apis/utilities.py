@@ -2,12 +2,13 @@
 Utilities
 """
 import json.decoder
+from modules import universe
 from datetime import datetime
 import csv
 
 
 def apiResponseHandler(response):
-    print(response)
+    if universe.preferences.printResponseCode: print(response)
     try:
         if response.ok:
             return response.json()

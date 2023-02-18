@@ -3,7 +3,7 @@ APIs for Price History
 https://developer.tdameritrade.com/price-history/apis
 """
 import requests
-from modules import globals, api
+from modules import universe, api
 from apis import utilities
 
 
@@ -12,7 +12,7 @@ def getPriceHistory(ticker, **kwargs):
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/marketdata/' + ticker + '/pricehistory',
                                                      params=params,
-                                                     headers={'Authorization': 'Bearer ' + globals.accessToken}))
+                                                     headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
 
 
 

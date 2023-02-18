@@ -3,19 +3,19 @@ APIs for User Info and Preferences
 https://developer.tdameritrade.com/user-principal/apis
 """
 import requests
-from modules import globals
+from modules import universe
 from apis import utilities
 
 
 def getPreferences():
-    return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
-                                                     headers={'Authorization': 'Bearer ' + globals.accessToken}))
+    return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber + '/preferences',
+                                                     headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
 
 
 def getStreamerSubscriptionKeys():
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/userprincipals/streamersubscriptionkeys',
-                                                     params={'accountIds': globals.accountNumber},
-                                                     headers={'Authorization': 'Bearer ' + globals.accessToken}))
+                                                     params={'accountIds': universe.credentials.accountNumber},
+                                                     headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
     # example of what is returned: {"keys": [{"key": "c7fb2_this_is_not_a_real_key_6c169b"}]}
 
 
@@ -24,13 +24,13 @@ def getUserPrincipals(**kwargs):  # fields is a list of what to return; options 
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/userprincipals',
                                                      params=params,
-                                                     headers={'Authorization': 'Bearer ' + globals.accessToken}))
+                                                     headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
 
 
 def updatePreferences(data):  # I could only get this to work through the dev website for some reason
-    return utilities.apiResponseHandler(requests.put('https://api.tdameritrade.com/v1/accounts/' + globals.accountNumber + '/preferences',
+    return utilities.apiResponseHandler(requests.put('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber + '/preferences',
                                                      json=data,
-                                                     headers={'Authorization': 'Bearer ' + globals.accessToken,
+                                                     headers={'Authorization': 'Bearer ' + universe.tokens.accessToken,
                                  'Content-Type': 'application/json'}))
 
 

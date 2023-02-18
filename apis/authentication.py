@@ -4,7 +4,6 @@ https://developer.tdameritrade.com/authentication/apis
 """
 
 from apis import utilities
-from modules import api
 import requests
 
 

@@ -3,7 +3,7 @@ APIs for Option Chains
 https://developer.tdameritrade.com/option-chains/apis
 """
 import requests
-from modules import globals, api
+from modules import universe, api
 from apis import utilities
 
 
@@ -12,4 +12,4 @@ def getOptionChain(**kwargs):
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/marketdata/chains',
                                                      params=params,
-                                                     headers={'Authorization': 'Bearer ' + globals.accessToken}))
+                                                     headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
