@@ -1,5 +1,6 @@
 # TD-Ameritrade-API-Python-Client  
-In 2023 TD is moving to schwab so some significant changes may be needed soon.
+In 2023 TD is moving to schwab so some significant changes may be needed soon.     
+Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
 1. `pip3 install requests pycron window-terminal websockets pandas SQLAlchemy`    
