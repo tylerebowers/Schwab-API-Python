@@ -17,7 +17,7 @@ Below is a light documentation on how it works, python is pseudocode-esk so if y
 
 The modules folder contains code for main opperations:     
  - `api.py` contains functions relating to api calls, requests, and automatic token checker daemons, works with `apis/`.
- - `database.py` contains functions for Postgresql and Pandas Dataframes note that adding data is normally automatic.
+ - `database.py` contains functions for Postgresql and Pandas Dataframes. Note that adding data is normally automatic.
  - `order.py` will eventually contain functions for automaic order placing and algorithmic paper money.
  - `stream.py` handles streaming and stream data, it works closely with database and `streaming/`.
  - `tokens.txt` contains api tokens as well as dates for when they expire.
