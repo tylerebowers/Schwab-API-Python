@@ -1,7 +1,7 @@
 """
 This file stores variables to be used between python files and functions
 Coded by Tyler Bowers
-Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Wrapper
+Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Client
 """
 
 import json
@@ -146,7 +146,7 @@ def _streamResponseHandler(streamOut):
                                 tempSnapshot = database.Snapshot(service, symbolData.get("key"), timestamp, symbolData)
                                 if universe.preferences.usingDatabase: database.DBAddSnapshot(tempSnapshot)  # add to database
                                 if universe.preferences.usingDataframes: database.DFAddSnapshot(tempSnapshot)  # add to capacitors
-                                universe.stream.terminal.print(f"[Data]: {tempSnapshot.toStreamString()}")  # to stream output
+                                universe.stream.terminal.print(f"[Data]: {tempSnapshot.toPrettyString()}")  # to stream output
                 case _:
                     universe.stream.terminal.print(f"[Unknown Response]: {streamOut}")
     except Exception as e:
