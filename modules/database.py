@@ -1,7 +1,7 @@
 """
 This file contains commands to access the database
 Coded by Tyler Bowers
-Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Wrapper
+Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Client
 """
 
 import psycopg2 as psql
@@ -35,6 +35,17 @@ def DBSetup():  # only needs to be run once, won't make any changes if database 
     universe.database.connection.commit()
 
 
+def cleanTimestamp(timestamp, milliseconds=False):  # formats to epoch in seconds (or milliseconds)
+    if milliseconds: multiplier = 1000
+    else: multiplier = 1
+    if type(timestamp) == datetime: return float(timestamp.timestamp() * multiplier)
+    elif type(timestamp) == str or type(timestamp) == int: timestamp = float(timestamp)
+    if timestamp < 90000000000:  # it's in seconds already
+        return float(timestamp * multiplier)
+    else:
+        return (float(timestamp)/1000) * multiplier
+
+
 class Snapshot:  # a single moment of data for a particular ticker
 
     def __init__(self, service, symbol, timestamp, dataDict):
@@ -42,23 +53,26 @@ class Snapshot:  # a single moment of data for a particular ticker
             self.symbol = symbol.upper()  # ticker
             self.service = service.upper()
             self.timestamp = cleanTimestamp(timestamp)
-            self.datetime = datetime.fromtimestamp(self.timestamp)
-            self.attributes = {"timestamp": self.timestamp}
+            self.datetime = datetime.fromtimestamp(float(self.timestamp))
+            self.attributes = {}
             for key in dataDict:
                 if key.isdigit():
                     self.attributes[key] = dataDict.get(key)
-            if self.symbol is None or self.service is None or self.timestamp is None or self.datetime is None or self.attributes == {}:
+            if self.symbol is None or self.service is None or self.timestamp is None or len(self.attributes) < 2:
                 print(f"[WARNING]: There might have been a problem in creating a snapshot object for {self.symbol}.")
         except Exception as e:
             print(f"[ERROR]: There was a problem in Snapshot initializer (__init__): {e}")
 
-    def toStreamString(self):
-        streamString = f"{self.service.upper()}.{self.symbol.upper()} {self.datetime.strftime('%c')}"
-        for attribute in self.attributes:  streamString += f", {universe.stream.fieldAliases[self.service][int(attribute)]}: {self.attributes[attribute]}"
-        return streamString
+    def toPrettyString(self):
+        try:
+            streamString = f"{self.service.upper()}.{self.symbol.upper()}; {self.datetime.strftime('%c')}"
+            for attribute in self.attributes:  streamString += f", {universe.stream.fieldAliases[self.service][int(attribute)]}: {self.attributes[attribute]}"
+            return streamString
+        except Exception as e:
+            print(f"[ERROR]: There was a problem in Snapshot toPrettyString: {e}")
 
     def __dict__(self, useAliases=False):
-        selfDict = {"service": self.service, "symbol": self.symbol, "datetime": self.datetime.strftime('%c')}
+        selfDict = {"service": self.service, "symbol": self.symbol, "datetime": datetime.fromtimestamp(self.attributes.get('timestamp', 0))}
         if useAliases:
             for attribute in self.attributes: selfDict[universe.stream.fieldAliases[self.service][int(attribute)]] = self.attributes[attribute]
         else:
@@ -77,7 +91,7 @@ class Snapshot:  # a single moment of data for a particular ticker
             case "timestamp":
                 return self.timestamp
             case "datetime":
-                return self.datetime
+                return datetime.fromtimestamp(self.attributes.get('timestamp', 0))
             case "all" | "dict" | "raw":
                 return self.__dict__()
             case _:
@@ -93,18 +107,6 @@ class Snapshot:  # a single moment of data for a particular ticker
                 except Exception as e:
                     print(f"[ERROR]: There was an issue with snapshot.get(): {e}")
                     return None
-
-
-def cleanTimestamp(timestamp, milliseconds=False):  # formats to epoch in seconds (or milliseconds)
-    if not milliseconds: multiplier = 0.001
-    else: multiplier = 1
-    if type(timestamp) == str: timestamp = float(timestamp)
-    if type(timestamp) == datetime:
-        return int(timestamp.timestamp() * 1000 * multiplier)
-    elif timestamp < 90000000000:
-        return int(timestamp * 1000 * multiplier)
-    else:
-        return int(timestamp)
 
 
 def DBCreateTable(service, keys, fields):
@@ -142,12 +144,12 @@ def DBAddSnapshot(snap):  # need check if database exists
     try:
         symbol = snap.symbol
         service = snap.service
-        timestamp = snap.timestamp
         columns = columnsORG = f"(timestamp"
-        values = valuesORG = f"(to_timestamp({timestamp})"
+        values = valuesORG = f"(to_timestamp({snap.timestamp})"
         for field in snap.attributes:
-            columns += f", {universe.stream.fieldAliases.get(service.upper())[int(field)]}"
-            values += f", {snap.attributes.get(field)}"
+            if field.isdigit():
+                columns += f", {universe.stream.fieldAliases.get(service.upper())[int(field)]}"
+                values += f", {snap.attributes.get(field)}"
         columns += ")"
         values += ")"
         if columns != columnsORG and values != valuesORG and symbol is not None:
@@ -229,10 +231,14 @@ def DFAddSnapshot(snap):
         symbol = snap.symbol
         service = snap.service
         df = universe.dataframes[service][symbol]
-        rowToAdd = []
+        rowToAdd = [snap.timestamp]
         for field in df.columns:
-            rowToAdd.append(snap.attributes.get(field, None))
-        df.loc[len(df.index)] = rowToAdd
+            if field[0].isdigit() and int(field[0]) != 0:
+                rowToAdd.append(snap.attributes.get(field[0], None))
+        if len(df.columns) == len(rowToAdd):
+            df.loc[len(df.index)] = rowToAdd
+        else:
+            print("[ERROR]: There was a problem in DFAddSnapshot, columns mismatch")
     except Exception as e:
         print(f"[ERROR]: There was a problem in DFAddSnapshot (adding snapshot to dataframe): {e}")
         return None
@@ -243,7 +249,7 @@ def DFAddData(service, symbol, timestamp, data):
         df = universe.dataframes[service][symbol]
         rowToAdd = [cleanTimestamp(timestamp)]
         for field in df.columns:
-            if field.isDigit():
+            if field.isdigit():
                 rowToAdd.append(data.get(field, None))
         df.loc[len(df.index)] = rowToAdd
     except Exception as e:
