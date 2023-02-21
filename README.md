@@ -8,11 +8,23 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 3. Start by running from main.py
 
 
+## What can this program do?
+ - Access all api funtions
+ - Stream all data types
+ - Auto access Token updates
+ - Auto Stream starting/stopping
+ - Auto create database and dataframe tables
+ - Auto add database and dataframe data
+ ### TBD
+ - Order handler / method
+ - Algorithmic / Probability paper money
+ - Statistics and analysis functions
+
+
 ## Usage and Design
 This python client makes working with the TD/Schwab api easier.    
 The idea is to make an easy to understand, highly-organized, and highly automatic client for the api.   
 Below is a light documentation on how it works, python is pseudocode-esk so if you are confused just read the code and follow the functions. 
-
 
 ### Organization
 
