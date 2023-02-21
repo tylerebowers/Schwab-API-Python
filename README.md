@@ -35,7 +35,7 @@ main.py initializes below main in `if __name__ == '__main__':` each call is desc
  1. `api.initialize()` # This calls a function that checks if the access or refresh token need to be re-authenticated. It also addes the tokens and expire times to `universe.py`
  2. `if universe.preferences.usingDatabase: database.DBConnect()` # This connects the database using the credentials that you supplied in `universe.credentials`, it assumes that it is a postgresql database. It also loads database connection variables into `universe.py`.
  3. `api._checkTokensDaemon()` # This appends a thread to the universe threads. This thread automatically updates the access token if needed. It is highly recomended to check on the program every 85 days to check the refresh token though the expire time for the refresh token is printed every time on startup.
- 4. `stream.startAutomatic()` # this appends a thread to main which will automatically starts the stream in market hours and stops the stream outside of market hours. It also starts the streamign window.
+ 4. `stream.startAutomatic()` # this appends a thread to main which will automatically start the stream in market hours and stop the stream outside of market hours. It also starts the streaming window.
  5. `stream.startManual()` # this appends a thread to main which starts the stream immediately, it is mainly intended for testing. It also starts the streaming window.
  6. `universe.threads.append(threading.Thread(target=main))` # this adds main() to the list of threads to start.
  7. The `for` loops start and join the threads.
