@@ -59,3 +59,6 @@ Example of streaming usage:
 
 Example of API usage:
 ![Picture of api calls](demos/apiCalls.jpg)
+
+Example of Dataframe (DF) usage:
+![Picture of dataframe](demos/dataframe.png)

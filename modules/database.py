@@ -58,7 +58,7 @@ class Snapshot:  # a single moment of data for a particular ticker
             for key in dataDict:
                 if key.isdigit():
                     self.attributes[key] = dataDict.get(key)
-            if self.symbol is None or self.service is None or self.timestamp is None or len(self.attributes) < 2:
+            if self.symbol is None or self.service is None or self.timestamp is None or len(self.attributes) < 1:
                 print(f"[WARNING]: There might have been a problem in creating a snapshot object for {self.symbol}.")
         except Exception as e:
             print(f"[ERROR]: There was a problem in Snapshot initializer (__init__): {e}")
