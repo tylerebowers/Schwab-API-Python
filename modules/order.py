@@ -107,7 +107,15 @@ class Order:
 
 
 class orderWizard:
-    def __init__(self):
+    def __init__(self, session=None, duration=None, orderType=None, cancelTime=None, complexOrderStrategyType=None,
+                 quantity=None, filledQuantity=None, remainingQuantity=None, requestedDestination=None,
+                 destinationLinkName=None, releaseTime=None, stopPrice=None, stopPriceLinkBasis=None,
+                 stopPriceLinkType=None, stopPriceOffset=None, stopType=None, priceLinkBasis=None, priceLinkType=None,
+                 price=None, taxLotMethod=None, orderLegCollection=None, activationPrice=None, specialInstruction=None,
+                 orderStrategyType=None, orderId=None, cancelable=None, editable=None, status=None, enteredTime=None,
+                 closeTime=None, accountId=None, orderActivityCollection=None, replacingOrderCollection=None,
+                 childOrderStrategies=None, statusDescription=None):
+        print(locals())
         self.session = None
         self.duration = None
         self.orderType = None

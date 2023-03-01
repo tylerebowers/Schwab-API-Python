@@ -13,7 +13,7 @@ from apis import authentication
 
 
 def initialize():
-    print("Welcome to the unofficial Schwab (previously TD Ameritrade) api wrapper!\nDesigned and maintained by Tyler Bowers: https://tylerebowers.com")
+    print("Welcome to the unofficial TD Ameritrade Python api client!\nGithub: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Client")
     if len(universe.credentials.consumerKey) != 32:
         print("[ERROR]: Please check to make sure that you have your consumer key in modules/universe.py")
         print("[INFO]: If you do have the key and this check is failing you can remove it in modules/api.py")
@@ -34,7 +34,7 @@ def initialize():
     print("[INFO]: " + refreshTokenFileTime)
     universe.tokens.accessTokenDateTime = datetime.strptime(accessTokenFileTime, "Access token last updated: %d/%m/%y %H:%M:%S")
     universe.tokens.refreshTokenDateTime = datetime.strptime(refreshTokenFileTime,
-                                                     "Refresh token last updated: %d/%m/%y %H:%M:%S")
+                                                     "Refresh token last updated: %d/%m/%y %H:%M:%S")                                          
     if (datetime.now() - universe.tokens.refreshTokenDateTime).days >= 89:
         print("[ERROR]: The refresh token has expired, please update.")
         _refreshTokenUpdate()
@@ -43,9 +43,9 @@ def initialize():
         print("[INFO]: The access token has expired, updating automatically.")
         _accessTokenUpdate()
     else:
-        print(f"[INFO]: Refresh token expires in {90-(datetime.now() - universe.tokens.refreshTokenDateTime).days} days!")
         universe.tokens.accessToken = tokenDictionary.get("access_token")
         universe.tokens.refreshToken = tokenDictionary.get("refresh_token")
+    print(f"[INFO]: Refresh token expires in {90-(datetime.now() - universe.tokens.refreshTokenDateTime).days} days!")
     print("[INFO]: Initialization Complete")
 
 
@@ -78,9 +78,9 @@ def _accessTokenUpdate():
     try:
         newAccessToken = _postAccessTokenAutomated('refresh_token', dictionary.get("refresh_token"))
     except Exception as e:
-        newAccessToken = dictionary
         print(e)
         for i in range(3): print("[WARNING]: Problem with access token request, check your internet connection!")
+        newAccessToken = dictionary
     dictionary['access_token'] = newAccessToken.get('access_token')
     with open('modules/tokens.txt', 'w') as file:
         file.write(datetime.now().strftime("Access token last updated: %d/%m/%y %H:%M:%S"))
@@ -91,7 +91,7 @@ def _accessTokenUpdate():
     universe.tokens.accessToken = dictionary.get("access_token")
     universe.tokens.refreshToken = dictionary.get("refresh_token")
     universe.tokens.accessTokenDateTime = datetime.now()
-    print("[INFO]: Access token updated")
+    print(f"[INFO]: Access token updated: {universe.tokens.accessTokenDateTime}")
 
 
 def getTokensFromFile(requestType):

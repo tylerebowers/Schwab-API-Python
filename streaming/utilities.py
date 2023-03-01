@@ -26,11 +26,11 @@ def request(command, service, keys, fields, recordRequest=True, addTickerToDB=Tr
         keys = list(set(universe.stream.subscriptions[service]["keys"] + keys))
         fields = list(set(universe.stream.subscriptions[service]["fields"] + fields))
 
-    if universe.preferences.usingDataframes and service.upper() in universe.dataframes:
+    if universe.preferences.usingDataframes and service in universe.dataframes:
         for key in keys:
             database.DFCreateTable(service.upper(), key, fields)
 
-    if universe.preferences.usingDatabase and addTickerToDB and service.upper() in universe.stream.fieldAliases:
+    if universe.preferences.usingDatabase and addTickerToDB and service in universe.stream.fieldAliases:
         database.DBCreateTable(service.upper(), keys, fields)
 
     if universe.stream.active:
@@ -64,7 +64,7 @@ def stringToList(ls):
     return ls
 
 
-def clearAllSubscriptions(confirm=False):
+def _ClearAllSubscriptions(confirm=False):
     if confirm:
         for subType in universe.stream.subscriptions:
             universe.stream.subscriptions[subType]["keys"] = []

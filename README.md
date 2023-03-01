@@ -4,7 +4,7 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
 1. `pip3 install requests pycron window-terminal websockets pandas SQLAlchemy`    
-2. Review preferences and credentials in modules/universe.py (specifically consumerKey and callbackUrl)
+2. Review preferences and credentials in modules/universe.py (specifically consumerKey, accountNumber (for streaming), and callbackUrl)
 3. Start by running from main.py
 
 
@@ -16,9 +16,9 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
  - Auto create database and dataframe tables
  - Auto add database and dataframe data
  ### TBD
- - Order handler / method
- - Algorithmic / Probability paper money
- - Statistics and analysis functions
+ - Order handler / method (40% complete)
+ - Algorithmic / Probability paper money (10% complete)
+ - Statistics and analysis functions (not started)
 
 
 ## Usage and Design

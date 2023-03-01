@@ -1,7 +1,7 @@
 """
 This file contains commands to access the database
 Coded by Tyler Bowers
-Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Client
+Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Wrapper
 """
 
 import psycopg2 as psql
@@ -36,28 +36,36 @@ def DBSetup():  # only needs to be run once, won't make any changes if database 
 
 
 def cleanTimestamp(timestamp, milliseconds=False):  # formats to epoch in seconds (or milliseconds)
-    if milliseconds: multiplier = 1000
-    else: multiplier = 1
-    if type(timestamp) == datetime: return float(timestamp.timestamp() * multiplier)
-    elif type(timestamp) == str or type(timestamp) == int: timestamp = float(timestamp)
+    if milliseconds:
+        multiplier = 1000
+    else:
+        multiplier = 1
+    if type(timestamp) == datetime:
+        return float(timestamp.timestamp() * multiplier)
+    elif type(timestamp) == str or type(timestamp) == int:
+        timestamp = float(timestamp)
     if timestamp < 90000000000:  # it's in seconds already
         return float(timestamp * multiplier)
     else:
-        return (float(timestamp)/1000) * multiplier
+        return (float(timestamp) / 1000) * multiplier
 
 
 class Snapshot:  # a single moment of data for a particular ticker
 
-    def __init__(self, service, symbol, timestamp, dataDict):
+    def __init__(self, service, symbol, timestamp=0, dataDict=None, fields=None, fillFromPrevious=True):
         try:
             self.symbol = symbol.upper()  # ticker
             self.service = service.upper()
             self.timestamp = cleanTimestamp(timestamp)
             self.datetime = datetime.fromtimestamp(float(self.timestamp))
-            self.attributes = {}
+            if universe.dataframes[self.service].get(f"{self.symbol}_PREVIOUS_SNAP", None) is not None and fillFromPrevious:
+                self.attributes = universe.dataframes[self.service][f"{self.symbol}_PREVIOUS_SNAP"].attributes
+            else:
+                self.attributes = {}
             for key in dataDict:
                 if key.isdigit():
                     self.attributes[key] = dataDict.get(key)
+            universe.dataframes[self.service][f"{self.symbol}_PREVIOUS_SNAP"] = self
             if self.symbol is None or self.service is None or self.timestamp is None or len(self.attributes) < 1:
                 print(f"[WARNING]: There might have been a problem in creating a snapshot object for {self.symbol}.")
         except Exception as e:
@@ -72,9 +80,11 @@ class Snapshot:  # a single moment of data for a particular ticker
             print(f"[ERROR]: There was a problem in Snapshot toPrettyString: {e}")
 
     def __dict__(self, useAliases=False):
-        selfDict = {"service": self.service, "symbol": self.symbol, "datetime": datetime.fromtimestamp(self.attributes.get('timestamp', 0))}
+        selfDict = {"service": self.service, "symbol": self.symbol,
+                    "datetime": datetime.fromtimestamp(self.attributes.get('timestamp', 0))}
         if useAliases:
-            for attribute in self.attributes: selfDict[universe.stream.fieldAliases[self.service][int(attribute)]] = self.attributes[attribute]
+            for attribute in self.attributes: selfDict[universe.stream.fieldAliases[self.service][int(attribute)]] = \
+            self.attributes[attribute]
         else:
             selfDict.update(self.attributes)
         return selfDict
@@ -144,15 +154,15 @@ def DBAddSnapshot(snap):  # need check if database exists
     try:
         symbol = snap.symbol
         service = snap.service
-        columns = columnsORG = f"(timestamp"
-        values = valuesORG = f"(to_timestamp({snap.timestamp})"
+        columns = f"(timestamp"
+        values = f"(to_timestamp({snap.timestamp})"
         for field in snap.attributes:
             if field.isdigit():
                 columns += f", {universe.stream.fieldAliases.get(service.upper())[int(field)]}"
                 values += f", {snap.attributes.get(field)}"
         columns += ")"
         values += ")"
-        if columns != columnsORG and values != valuesORG and symbol is not None:
+        if len(columns) > 12 and len(values) > 32 and symbol is not None:
             universe.database.cursor.execute(f"INSERT INTO {service}.{symbol} {columns} VALUES {values}")
             universe.database.connection.commit()
     except Exception as e:
@@ -206,7 +216,7 @@ def DBGetTable(service, ticker, select="*", lowerBound=None, upperBound=None, ba
 
 def DFCreateTable(service, ticker, columns):
     try:
-        colNames = [("0","timestamp")]
+        colNames = [("0", "timestamp")]
         for key in columns:
             if (type(key) == int or key.isdigit()) and int(key) != 0:
                 colNames.append((str(key), universe.stream.fieldAliases.get(service.upper())[int(key)]))
@@ -255,5 +265,3 @@ def DFAddData(service, symbol, timestamp, data):
     except Exception as e:
         print(f"[ERROR]: There was a problem in DFAddData (adding data to dataframe): {e}")
         return None
-
-

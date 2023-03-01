@@ -7,7 +7,7 @@ Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Wrapper
 
 class _Credentials:
     # Schwab/TD account credentials
-    consumerKey = "your key here"
+    consumerKey = "your consumer key"
     callbackUrl = "https://localhost/"
     accountUsername = "your account username"
     accountNumber = "your account number"

@@ -1,7 +1,7 @@
 """
 This file stores variables to be used between python files and functions
 Coded by Tyler Bowers
-Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Client
+Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Wrapper
 """
 
 import json
@@ -22,11 +22,9 @@ global ws
 
 def _setupStream():
     # if universe.stream.subscriptionKey is None or universe.stream.connectionInfo == {} or universe.stream.userPrincipals == {}:
-    universe.stream.subscriptionKey = userInfoAndPreferences.getStreamerSubscriptionKeys().get('keys')[0].get(
-        'key')
-    universe.stream.connectionInfo = userInfoAndPreferences.getUserPrincipals(
-        fields="streamerConnectionInfo").get(
-        'streamerInfo')
+    if not universe.credentials.accountNumber.isdigit(): print("[ERROR]: You must enter your account number for streaming in modules/universe.py")
+    universe.stream.subscriptionKey = userInfoAndPreferences.getStreamerSubscriptionKeys().get('keys')[0].get('key')
+    universe.stream.connectionInfo = userInfoAndPreferences.getUserPrincipals(fields="streamerConnectionInfo").get('streamerInfo')
     universe.stream.userPrincipals = userInfoAndPreferences.getUserPrincipals()
 
 
@@ -36,6 +34,7 @@ async def _clientStart(qos=universe.preferences.streamingQOSLevel):
     while True:
         try:
             _setupStream()
+            print("I AM HERE")
             websocketUrl = "wss://" + universe.stream.connectionInfo.get('streamerSocketUrl') + "/ws"
             startTimeStamp = datetime.now()
             async with websockets.connect(websocketUrl, ping_interval=None) as ws:
@@ -82,7 +81,7 @@ async def _send(toSend):
     await ws.send(toSend)
 
 
-def startManual(qos=universe.preferences.streamingQOSLevel):
+def _startManual(qos=universe.preferences.streamingQOSLevel):
     universe.stream.terminal = WindowTerminal.create_window()
     universe.stream.terminal.open()
 
@@ -92,21 +91,23 @@ def startManual(qos=universe.preferences.streamingQOSLevel):
     universe.threads.append(threading.Thread(target=_manStart, daemon=True))
 
 
-def startAutomatic(qos=universe.preferences.streamingQOSLevel):
+def _startAutomatic(qos=universe.preferences.streamingQOSLevel):
     universe.stream.terminal = WindowTerminal.create_window()
     universe.stream.terminal.open()
 
-    def _autoStart():
+    def _autoRun():
         while True:
-            if pycron.is_now('* 9-19 * * mon-fri') and not universe.stream.active:
+            inHours = pycron.is_now('* 9-19 * * mon-fri')
+            if inHours and not universe.stream.active:
                 asyncio.run(_clientStart(qos=qos))
-            elif (pycron.is_now('* 0-8,20-24 * * *') or pycron.is_now('* * * * sat-sun')) and universe.stream.active:
+            elif not inHours and universe.stream.active:
+                print("[INFO]: Stopping Stream.")
                 send(admin.logout())
                 universe.stream.active = False
             time.sleep(60)
 
-    universe.threads.append(threading.Thread(target=_autoStart, daemon=True))
-    if pycron.is_now('* 0-8,20-24 * * *') or pycron.is_now('* * * * sat-sun'):
+    universe.threads.append(threading.Thread(target=_autoRun, daemon=True))
+    if not pycron.is_now('* 9-19 * * mon-fri'):
         print("[INFO]: Stream was started outside of active hours and will launch when in hours.")
 
 
