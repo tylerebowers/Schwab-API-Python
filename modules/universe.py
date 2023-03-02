@@ -24,6 +24,8 @@ class _Preferences:
     usingDatabase = False
     printResponseCode = True
     streamingQOSLevel = 2
+    streamAfterHours = True
+    streamPreHours = True
     usingDataframes = True
 
 preferences = _Preferences()
