@@ -5,13 +5,12 @@ Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Wrapper
 """
 
 import json
-import time
 import asyncio
-import pycron
 import threading
 import websockets
 import websockets.exceptions
-from datetime import datetime
+from time import sleep
+from datetime import datetime, time
 from streaming import admin, utilities
 from apis import userInfoAndPreferences
 from window_terminal import WindowTerminal
@@ -95,19 +94,33 @@ def _startAutomatic(qos=universe.preferences.streamingQOSLevel):
     universe.stream.terminal = WindowTerminal.create_window()
     universe.stream.terminal.open()
 
-    def _autoRun():
+    start = time(9, 30, 0)
+    end = time(16, 0, 0)
+    if universe.preferences.streamPreHours:
+        start = time(8, 0, 0)
+    if universe.preferences.streamAfterHours:
+        end = time(20, 0, 0)
+
+    def _inHours():
+        return (start <= datetime.now().time() <= end) and (0 <= datetime.now().weekday() <=4)
+
+    def _autoStart():
         while True:
-            inHours = pycron.is_now('* 9-19 * * mon-fri')
-            if inHours and not universe.stream.active:
+            if _inHours() and not universe.stream.active:
                 asyncio.run(_clientStart(qos=qos))
-            elif not inHours and universe.stream.active:
+            sleep(60)
+
+    def _autoStop():
+        while True:
+            if not _inHours() and universe.stream.active:
                 print("[INFO]: Stopping Stream.")
                 send(admin.logout())
                 universe.stream.active = False
-            time.sleep(60)
+            sleep(60)
 
-    universe.threads.append(threading.Thread(target=_autoRun, daemon=True))
-    if not pycron.is_now('* 9-19 * * mon-fri'):
+    universe.threads.append(threading.Thread(target=_autoStart, daemon=True))
+    universe.threads.append(threading.Thread(target=_autoStop, daemon=True))
+    if not start <= datetime.now().time() <= end:
         print("[INFO]: Stream was started outside of active hours and will launch when in hours.")
 
 
