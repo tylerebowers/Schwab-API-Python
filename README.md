@@ -16,7 +16,7 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
  - Auto create database and dataframe tables
  - Auto add database and dataframe data
  ### TBD
- - Order handler / method (60% complete)
+ - Order handler / method (75% complete)
  - Algorithmic / Probability paper money (10% complete)
  - Statistics and analysis functions (not started)
 
