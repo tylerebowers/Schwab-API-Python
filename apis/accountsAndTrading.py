@@ -25,7 +25,7 @@ def getOrder(orderId):
 
 
 def getOrdersByPath(**kwargs):  # times are entered as "yyyy-MM-dd"
-    args = ["maxResults", "fromEnteredTime", "toEnteredTime", "status"]
+    args = ("maxResults", "fromEnteredTime", "toEnteredTime", "status")
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(
         requests.get('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber + '/orders',
@@ -34,7 +34,7 @@ def getOrdersByPath(**kwargs):  # times are entered as "yyyy-MM-dd"
 
 
 def getOrdersByQuery(**kwargs):
-    args = ["accountId", "maxResults", "fromEnteredTime", "toEnteredTime", "status"]
+    args = ("accountId", "maxResults", "fromEnteredTime", "toEnteredTime", "status")
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/orders/',
                                                      params=params,
@@ -55,11 +55,11 @@ def replaceOrder(orderId, data):
 
 
 """
-Saved Orders
+Saved Orders  #THESE WILL BE REMOVED IN THE SCHWAB UPDATE
 """
 
 
-def createSavedOrder(data):  # FIX
+def createSavedOrder(data):
     return utilities.apiResponseHandler(requests.post('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber + '/savedorders',
                                                       json=data,
                                                       headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
@@ -97,7 +97,7 @@ Accounts
 
 # not tested
 def getAccount(**kwargs):
-    args = ["fields"]
+    args = ("fields")
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber,
                                                      params=params,
@@ -106,7 +106,7 @@ def getAccount(**kwargs):
 
 # not tested
 def getAccounts(**kwargs):
-    args = ["fields"]
+    args = ("fields")
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/',
                                                      params=params,

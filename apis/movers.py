@@ -8,7 +8,7 @@ from apis import utilities
 
 
 def getMovers(index, **kwargs):  # Working
-    args = ["direction", "change"]
+    args = ("direction", "change")
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/marketdata/' + index + '/movers',
                                                      params=params,

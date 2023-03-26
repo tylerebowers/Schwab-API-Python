@@ -13,10 +13,9 @@ from apis import authentication
 
 
 def initialize():
-    print("Welcome to the unofficial TD Ameritrade Python api client!\nGithub: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Client")
     if len(universe.credentials.consumerKey) != 32:
-        print("[ERROR]: Please check to make sure that you have your consumer key in modules/universe.py")
-        print("[INFO]: If you do have the key and this check is failing you can remove it in modules/api.py")
+        universe.terminal.error("Please check to make sure that you have your consumer key in modules/universe.py")
+        universe.terminal.info("If you do have the key and this check is failing you can remove it in modules/api.py")
         quit()
     try:
         with open('modules/tokens.txt', 'r') as file:
@@ -26,27 +25,26 @@ def initialize():
             file.flush()
             file.close()
     except:
-        print("[ERROR]: Error in reading from file.")
-        print(
-            "[INFO]: Please make sure that modules/tokens.txt exists and that your environment is setup correctly (ie running program from main.py).")
+        universe.terminal.error("Error in reading from file.")
+        universe.terminal.info("Please make sure that modules/tokens.txt exists and that your environment is setup correctly (ie running program from main.py).")
         quit()
-    print("[INFO]: " + accessTokenFileTime)
-    print("[INFO]: " + refreshTokenFileTime)
+    universe.terminal.info("" + accessTokenFileTime)
+    universe.terminal.info("" + refreshTokenFileTime)
     universe.tokens.accessTokenDateTime = datetime.strptime(accessTokenFileTime, "Access token last updated: %d/%m/%y %H:%M:%S")
     universe.tokens.refreshTokenDateTime = datetime.strptime(refreshTokenFileTime,
-                                                     "Refresh token last updated: %d/%m/%y %H:%M:%S")                                          
+                                                     "Refresh token last updated: %d/%m/%y %H:%M:%S")
     if (datetime.now() - universe.tokens.refreshTokenDateTime).days >= 89:
-        print("[ERROR]: The refresh token has expired, please update.")
+        universe.terminal.error("The refresh token has expired, please update.")
         _refreshTokenUpdate()
     elif (datetime.now() - universe.tokens.accessTokenDateTime).days >= 1 or (
             (datetime.now() - universe.tokens.accessTokenDateTime).seconds > ((universe.tokens.authTokenTimeout * 60) - 60)):
-        print("[INFO]: The access token has expired, updating automatically.")
+        universe.terminal.info("The access token has expired, updating automatically.")
         _accessTokenUpdate()
     else:
         universe.tokens.accessToken = tokenDictionary.get("access_token")
         universe.tokens.refreshToken = tokenDictionary.get("refresh_token")
-    print(f"[INFO]: Refresh token expires in {90-(datetime.now() - universe.tokens.refreshTokenDateTime).days} days!")
-    print("[INFO]: Initialization Complete")
+    universe.terminal.info(f"Refresh token expires in {90-(datetime.now() - universe.tokens.refreshTokenDateTime).days} days!")
+    universe.terminal.info("Initialization Complete")
 
 
 def _refreshTokenUpdate():
@@ -66,7 +64,7 @@ def _refreshTokenUpdate():
         file.close()
     universe.tokens.accessToken = newTokens.get("access_token")
     universe.tokens.refreshToken = newTokens.get("refresh_token")
-    print("[INFO]: Refresh and Access tokens updated")
+    universe.terminal.info("Refresh and Access tokens updated")
 
 
 def _accessTokenUpdate():
@@ -78,9 +76,9 @@ def _accessTokenUpdate():
     try:
         newAccessToken = _postAccessTokenAutomated('refresh_token', dictionary.get("refresh_token"))
     except Exception as e:
-        print(e)
-        for i in range(3): print("[WARNING]: Problem with access token request, check your internet connection!")
         newAccessToken = dictionary
+        print(e)
+        for i in range(3): universe.terminal.warning("Problem with access token request, check your internet connection!")
     dictionary['access_token'] = newAccessToken.get('access_token')
     with open('modules/tokens.txt', 'w') as file:
         file.write(datetime.now().strftime("Access token last updated: %d/%m/%y %H:%M:%S"))
@@ -91,7 +89,7 @@ def _accessTokenUpdate():
     universe.tokens.accessToken = dictionary.get("access_token")
     universe.tokens.refreshToken = dictionary.get("refresh_token")
     universe.tokens.accessTokenDateTime = datetime.now()
-    print(f"[INFO]: Access token updated: {universe.tokens.accessTokenDateTime}")
+    universe.terminal.info(f"Access token updated: {universe.tokens.accessTokenDateTime}")
 
 
 def getTokensFromFile(requestType):
@@ -118,7 +116,7 @@ def getTokensFromFile(requestType):
             case "token_type":
                 return tokenDictionary.get("token_type")
             case _:
-                print("[WARNING]: Invalid requestType ")
+                universe.terminal.warning("Invalid requestType ")
 
 
 def _postAccessTokenAutomated(grant_type, code):
@@ -134,11 +132,11 @@ def _postAccessTokenAutomated(grant_type, code):
 
 def checkTokensManual():
     if (datetime.now() - universe.tokens.refreshTokenDateTime).days > 89:
-        for i in range(3): print("[WARNING]: The refresh token has expired, please update!")
+        for i in range(3): universe.terminal.warning("The refresh token has expired, please update!")
         _refreshTokenUpdate()
     elif (datetime.now() - universe.tokens.accessTokenDateTime).days >= 1 or (
             (datetime.now() - universe.tokens.accessTokenDateTime).seconds > ((universe.tokens.authTokenTimeout * 60) - 120)):
-        print("[INFO]: The access token has expired, updating automatically.")
+        universe.terminal.info("The access token has expired, updating automatically.")
         _accessTokenUpdate()
 
 

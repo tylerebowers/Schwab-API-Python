@@ -21,9 +21,12 @@ global ws
 
 def _setupStream():
     # if universe.stream.subscriptionKey is None or universe.stream.connectionInfo == {} or universe.stream.userPrincipals == {}:
-    if not universe.credentials.accountNumber.isdigit(): print("[ERROR]: You must enter your account number for streaming in modules/universe.py")
-    universe.stream.subscriptionKey = userInfoAndPreferences.getStreamerSubscriptionKeys().get('keys')[0].get('key')
-    universe.stream.connectionInfo = userInfoAndPreferences.getUserPrincipals(fields="streamerConnectionInfo").get('streamerInfo')
+    if not universe.credentials.accountNumber.isdigit(): universe.terminal.error("You must enter your account number for streaming in modules/universe.py")
+    universe.stream.subscriptionKey = userInfoAndPreferences.getStreamerSubscriptionKeys().get('keys')[0].get(
+        'key')
+    universe.stream.connectionInfo = userInfoAndPreferences.getUserPrincipals(
+        fields="streamerConnectionInfo").get(
+        'streamerInfo')
     universe.stream.userPrincipals = userInfoAndPreferences.getUserPrincipals()
 
 
@@ -33,7 +36,6 @@ async def _clientStart(qos=universe.preferences.streamingQOSLevel):
     while True:
         try:
             _setupStream()
-            print("I AM HERE")
             websocketUrl = "wss://" + universe.stream.connectionInfo.get('streamerSocketUrl') + "/ws"
             startTimeStamp = datetime.now()
             async with websockets.connect(websocketUrl, ping_interval=None) as ws:
@@ -62,14 +64,14 @@ async def _clientStart(qos=universe.preferences.streamingQOSLevel):
 
         except websockets.exceptions.ConnectionClosedOK as info:
             universe.stream.active = False
-            print(f"[INFO]: {info}")
-            print("[INFO]: Stream has closed.")
+            universe.terminal.info(f"{info}")
+            universe.terminal.info("Stream has closed.")
             break
         except Exception as error:
             universe.stream.active = False
-            print(f"[ERROR]: {error}")
+            universe.terminal.error(f"{error}")
             if (datetime.now() - startTimeStamp).seconds < 70:
-                print("[ERROR]: Stream not alive for more than 1 minute, exiting...")
+                universe.terminal.error("Stream not alive for more than 1 minute, exiting...")
                 break
             else:
                 universe.stream.terminal.print("[WARNING]: Connection lost to server, reconnecting...")
@@ -113,7 +115,7 @@ def _startAutomatic(qos=universe.preferences.streamingQOSLevel):
     def _autoStop():
         while True:
             if not _inHours() and universe.stream.active:
-                print("[INFO]: Stopping Stream.")
+                universe.terminal.info("Stopping Stream.")
                 send(admin.logout())
                 universe.stream.active = False
             sleep(60)
@@ -121,7 +123,7 @@ def _startAutomatic(qos=universe.preferences.streamingQOSLevel):
     universe.threads.append(threading.Thread(target=_autoStart, daemon=True))
     universe.threads.append(threading.Thread(target=_autoStop, daemon=True))
     if not start <= datetime.now().time() <= end:
-        print("[INFO]: Stream was started outside of active hours and will launch when in hours.")
+        universe.terminal.info("Stream was started outside of active hours and will launch when in hours.")
 
 
 def send(listOfRequests):
@@ -130,7 +132,7 @@ def send(listOfRequests):
         toSend = json.dumps({"requests": listOfRequests})
         asyncio.run(_send(toSend))
     else:
-        print("[WARNING]: Stream is not active, nothing sent.")
+        universe.terminal.warning("Stream is not active, nothing sent.")
 
 
 def stop():
@@ -166,4 +168,4 @@ def _streamResponseHandler(streamOut):
     except Exception as e:
         universe.stream.terminal.print(f"[ERROR]: There was an error in decoding the stream response: {streamOut}")
         universe.stream.terminal.print(f"[ERROR]: The error was: {e}")
-        # print(f"[ERROR]: There was an error in decoding the stream response: {e}")
+        # universe.terminal.error(f"There was an error in decoding the stream response: {e}")

@@ -22,15 +22,27 @@ def main():
     stream.send(levelOne.forex(["EUR/USD"], [0, 1, 2, 8]))
     stream.send(levelOne.option(["AMD"], [0, 2, 3, 8])) #Options dont work yet for some reason, maybe you can fix it?
     
-    # This is an example of an order It is commented out so you dont accidentally run it!
     """
-    order = {'orderType': 'LIMIT', 'session': 'NORMAL', 'duration': 'DAY', 'orderStrategyType': 'SINGLE', 'price': '30.00',
-                 'orderLegCollection': [{'instruction': 'Buy', 'quantity': 1, 'instrument': {'symbol': 'NDAQ', 'assetType': 'EQUITY'}}]}
-    print(accountsAndTrading.placeOrder(order))
+    # This is an example of a dynamically built order, It is commented out so you dont accidentally run it!
+    ord = order.Order(orderType="LIMIT", session="NORMAL", duration="DAY", orderStrategyType="SINGLE", price=90)
 
-    print(accountsAndTrading.getOrdersByPath())
+    leg = order.Leg(instruction="Buy", quantity=1)
+    ord.addLeg(leg)
 
-    print(accountsAndTrading.cancelOrder("Order Number"))
+    ins = order.Instrument(assetType="EQUITY", symbol="AMD", optionMultiplier="This is not included in compliation")
+    leg.addInstrument(ins)
+    
+    ord.submit()
+    
+    
+    # This is an example of a preset order, It is commented out so you dont accidentally run it!
+    
+    order.submit(order.presets.equity.buyLimited("AMD", 1, 90))
+    
+    # To cancel an order:
+    
+    accountsAndTrading.cancelOrder("Order Number")
+    
     """
     """
     # if you want to enter your own commands while the stream is running

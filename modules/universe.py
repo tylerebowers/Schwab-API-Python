@@ -21,13 +21,17 @@ credentials = _Credentials()
 
 
 class _Preferences:
-    usingDatabase = False
-    printResponseCode = True
+    #apis
+    printResponseCode = False
+    ##streaming
     streamingQOSLevel = 2
     streamAfterHours = True
     streamPreHours = True
     usingDataframes = True
-
+    usingDatabase = False
+    #orders
+    orderDeltaLimit = 0.005  # percentage that your order is allowed to be over the price of a stock
+    
 preferences = _Preferences()
 
 """
@@ -220,3 +224,10 @@ dataframes = {"QUOTE": {},
               "TIMESALE_FOREX": {},
               "TIMESALE_FUTURES": {},
               "TIMESALE_OPTIONS": {}}
+
+class _Terminal:
+    def info(self, string): print(f"\033[92m{'[INFO]: '}\033[00m{string}")
+    def warning(self, string): print(f"\033[93m{'[WARN]: '}\033[00m{string}")
+    def error(self, string): print(f"\033[91m{'[ERROR]: '}\033[00m{string}")
+
+terminal = _Terminal()

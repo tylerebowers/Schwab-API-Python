@@ -21,7 +21,7 @@ class _AccountsAndTrading:
                 headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
 
     def getOrdersByPath(self, **kwargs):  # times are entered as "yyyy-MM-dd"
-        args = ["maxResults", "fromEnteredTime", "toEnteredTime", "status"]
+        args = ("maxResults", "fromEnteredTime", "toEnteredTime", "status")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(
             requests.get('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber + '/orders',
@@ -29,7 +29,7 @@ class _AccountsAndTrading:
                          headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
 
     def getOrdersByQuery(self, **kwargs):
-        args = ["accountId", "maxResults", "fromEnteredTime", "toEnteredTime", "status"]
+        args = ("accountId", "maxResults", "fromEnteredTime", "toEnteredTime", "status")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/orders/',
                                                          params=params,
@@ -86,7 +86,7 @@ class _AccountsAndTrading:
 
     # not tested
     def getAccount(self, **kwargs):
-        args = ["fields"]
+        args = ("fields")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(
             requests.get('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber,
@@ -95,7 +95,7 @@ class _AccountsAndTrading:
 
     # not tested
     def getAccounts(self, **kwargs):
-        args = ["fields"]
+        args = ("fields")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/',
                                                          params=params,
@@ -165,7 +165,7 @@ class _MarketHours:
 
 class _Movers:
     def getMovers(self, index, **kwargs):  # Working
-        args = ["direction", "change"]
+        args = ("direction", "change")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(
             requests.get('https://api.tdameritrade.com/v1/marketdata/' + index + '/movers',
@@ -182,9 +182,9 @@ class _Movers:
 
 class _OptionChains:
     def getOptionChain(self, **kwargs):
-        args = ["symbol", "contractType", "strikeCount", "includeQuotes", "strategy", "interval", "strike", "range",
+        args = ("symbol", "contractType", "strikeCount", "includeQuotes", "strategy", "interval", "strike", "range",
                 "fromDate", "toDate", "volatility", "underlyingPrice", "interestRate", "daysToExpiration", "expMonth",
-                "optionType"]
+                "optionType")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/marketdata/chains',
                                                          params=params,
@@ -194,7 +194,7 @@ class _OptionChains:
 
 class _PriceHistory:
     def getPriceHistory(self, ticker, **kwargs):
-        args = ["periodType", "period", "frequencyType", "frequency", "endDate", "startDate", "needExtendedHoursData"]
+        args = ("periodType", "period", "frequencyType", "frequency", "endDate", "startDate", "needExtendedHoursData")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(
             requests.get('https://api.tdameritrade.com/v1/marketdata/' + ticker + '/pricehistory',
@@ -247,7 +247,7 @@ class _TransactionHistory:
             headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
 
     def getTransactions(self, **kwargs):
-        args = ["type", "symbol", "startDate", "endDate"]
+        args = ("type", "symbol", "startDate", "endDate")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(
             requests.get('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber + '/transactions',
@@ -269,7 +269,7 @@ class _UserInfoAndPreferences:
         # example of what is returned: {"keys": [{"key": "c7fb2_this_is_not_a_real_key_6c169b"}]}
 
     def getUserPrincipals(self, **kwargs):  # fields is a list of what to return; options are: streamerSubscriptionKeys, streamerConnectionInfo, preferences, surrogateIds
-        args = ["fields"]
+        args = ("fields")
         params = utilities.kwargsHandler(args, kwargs)
         return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/userprincipals',
                                                          params=params,

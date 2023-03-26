@@ -20,7 +20,7 @@ def getStreamerSubscriptionKeys():
 
 
 def getUserPrincipals(**kwargs):  # fields is a list of what to return; options are: streamerSubscriptionKeys, streamerConnectionInfo, preferences, surrogateIds
-    args = ["fields"]
+    args = ("fields")
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/userprincipals',
                                                      params=params,

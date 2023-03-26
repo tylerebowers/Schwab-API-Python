@@ -13,7 +13,7 @@ def getTransaction(transactionId):
 
 
 def getTransactions(**kwargs):
-    args = ["type", "symbol", "startDate", "endDate"]
+    args = ("type", "symbol", "startDate", "endDate")
     params = utilities.kwargsHandler(args, kwargs)
     return utilities.apiResponseHandler(requests.get('https://api.tdameritrade.com/v1/accounts/' + universe.credentials.accountNumber + '/transactions',
                                                      params=params,

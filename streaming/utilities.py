@@ -38,14 +38,14 @@ def request(command, service, keys, fields, recordRequest=True, addTickerToDB=Tr
                             parameters={"keys": listToString(keys), "fields": listToString(fields)})
     else:
         if recordRequest:
-            print("[INFO]: Request(s) saved to send on stream start.")
+            universe.terminal.info("Request(s) saved to send on stream start.")
         else:
-            print("[INFO]: Stream is not running and request was not saved.")
+            universe.terminal.info("Stream is not running and request was not saved.")
 
 
 def basicRequest(**kwargs):
     universe.stream.requestId += 1
-    args = ["service", "requestid", "command", "account", "source", "parameters"]
+    args = ("service", "requestid", "command", "account", "source", "parameters")
     request = {"requestid": universe.stream.requestId, "account": universe.stream.userPrincipals.get("accounts")[0].get("accountId"),
                "source": universe.stream.connectionInfo.get("appId")}
     for key, value in kwargs.items():

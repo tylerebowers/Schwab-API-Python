@@ -26,7 +26,7 @@ def DBConnect():
     except Exception as e:
         print(e)
         universe.preferences.usingDatabase = False
-        print("[ERROR]: There was a problem connecting to the database.")
+        universe.terminal.error("There was a problem connecting to the database.")
 
 
 def DBSetup():  # only needs to be run once, won't make any changes if database is already properly setup
@@ -67,9 +67,9 @@ class Snapshot:  # a single moment of data for a particular ticker
                     self.attributes[key] = dataDict.get(key)
             universe.dataframes[self.service][f"{self.symbol}_PREVIOUS_SNAP"] = self
             if self.symbol is None or self.service is None or self.timestamp is None or len(self.attributes) < 1:
-                print(f"[WARNING]: There might have been a problem in creating a snapshot object for {self.symbol}.")
+                universe.terminal.warning(f"There might have been a problem in creating a snapshot object for {self.symbol}.")
         except Exception as e:
-            print(f"[ERROR]: There was a problem in Snapshot initializer (__init__): {e}")
+            universe.terminal.error(f"There was a problem in Snapshot initializer (__init__): {e}")
 
     def toPrettyString(self):
         try:
@@ -77,7 +77,7 @@ class Snapshot:  # a single moment of data for a particular ticker
             for attribute in self.attributes:  streamString += f", {universe.stream.fieldAliases[self.service][int(attribute)]}: {self.attributes[attribute]}"
             return streamString
         except Exception as e:
-            print(f"[ERROR]: There was a problem in Snapshot toPrettyString: {e}")
+            universe.terminal.error(f"There was a problem in Snapshot toPrettyString: {e}")
 
     def __dict__(self, useAliases=False):
         selfDict = {"service": self.service, "symbol": self.symbol,
@@ -115,7 +115,7 @@ class Snapshot:  # a single moment of data for a particular ticker
                     else:
                         return None
                 except Exception as e:
-                    print(f"[ERROR]: There was an issue with snapshot.get(): {e}")
+                    universe.terminal.error(f"There was an issue with snapshot.get(): {e}")
                     return None
 
 
@@ -146,7 +146,7 @@ def DBCreateTable(service, keys, fields):
                 universe.database.cursor.execute(f"CREATE TABLE IF NOT EXISTS {service}.{key} {attributes}")
         universe.database.commit()
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DBCreateTable (adding a new table to the database): {e}")
+        universe.terminal.error(f"There was a problem in DBCreateTable (adding a new table to the database): {e}")
         return None
 
 
@@ -166,7 +166,7 @@ def DBAddSnapshot(snap):  # need check if database exists
             universe.database.cursor.execute(f"INSERT INTO {service}.{symbol} {columns} VALUES {values}")
             universe.database.connection.commit()
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DBAddSnapshot (adding a snapshot to the database): {e}")
+        universe.terminal.error(f"There was a problem in DBAddSnapshot (adding a snapshot to the database): {e}")
         return None
 
 
@@ -187,7 +187,7 @@ def DBAddData(service, ticker, timestamp, data):  # should check if database exi
             f"INSERT INTO {service}.{ticker} {columns} VALUES {values}")
         universe.database.connection.commit()
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DBAddData (adding data to the database): {e}")
+        universe.terminal.error(f"There was a problem in DBAddData (adding data to the database): {e}")
         return None
 
 
@@ -210,7 +210,7 @@ def DBGetTable(service, ticker, select="*", lowerBound=None, upperBound=None, ba
             sql = f"select {select} from {service.upper()}.{ticker.upper()}"
         return pd.DataFrame(universe.database.engine.execute(text(sql)))
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DBGetTable (getting table from the database): {e}")
+        universe.terminal.error(f"There was a problem in DBGetTable (getting table from the database): {e}")
         return None
 
 
@@ -224,7 +224,7 @@ def DFCreateTable(service, ticker, columns):
         df.columns = pd.MultiIndex.from_tuples(df.columns)
         universe.dataframes[service.upper()][ticker.upper()] = df
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DFCreateTable (creating a new dataframe): {e}")
+        universe.terminal.error(f"There was a problem in DFCreateTable (creating a new dataframe): {e}")
         return None
 
 
@@ -232,7 +232,7 @@ def DFGetTable(service, ticker):
     try:
         return universe.dataframes[service.upper()][ticker.upper()]
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DFGetTable: {e}")
+        universe.terminal.error(f"There was a problem in DFGetTable: {e}")
         return None
 
 
@@ -248,9 +248,9 @@ def DFAddSnapshot(snap):
         if len(df.columns) == len(rowToAdd):
             df.loc[len(df.index)] = rowToAdd
         else:
-            print("[ERROR]: There was a problem in DFAddSnapshot, columns mismatch")
+            universe.terminal.error("There was a problem in DFAddSnapshot, columns mismatch")
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DFAddSnapshot (adding snapshot to dataframe): {e}")
+        universe.terminal.error(f"There was a problem in DFAddSnapshot (adding snapshot to dataframe): {e}")
         return None
 
 
@@ -263,5 +263,5 @@ def DFAddData(service, symbol, timestamp, data):
                 rowToAdd.append(data.get(field, None))
         df.loc[len(df.index)] = rowToAdd
     except Exception as e:
-        print(f"[ERROR]: There was a problem in DFAddData (adding data to dataframe): {e}")
+        universe.terminal.error(f"There was a problem in DFAddData (adding data to dataframe): {e}")
         return None
