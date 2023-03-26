@@ -4,7 +4,7 @@ import requests
 import math
 
 
-def help(term):  # example: help("order.quantity")
+def help(term):
     definitions = {
         "order": {
             'session': "'NORMAL' or 'AM' or 'PM' or 'SEAMLESS'",
@@ -176,7 +176,23 @@ class Leg:
 
 
 class Execution:
-    print("a")
+    aliases = ("activityType", "executionType", "quantity", "orderRemainingQuantity", "executionLegs")
+
+    def __init__(self, activityType=None, executionType=None, quantity=None, orderRemainingQuantity=None, executionLegs=None):
+        self.activityType = activityType
+        self.executionType = executionType
+        self.quantity = quantity
+        self.orderRemainingQuantity = orderRemainingQuantity
+        self.executionLegs = executionLegs
+
+    def __dict__(self):
+        execDict = {}
+        for i, param in enumerate((self.activityType, self.executionType, self.quantity, self.orderRemainingQuantity, self.executionLegs)):
+            if param is not None: execDict[self.aliases[i]] = param
+        return execDict
+
+    def __str__(self):
+        return str(self.__dict__())
 
 
 class Order:
