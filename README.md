@@ -56,7 +56,7 @@ The modules folder contains code for main opperations:
  - Please view the tutorial part 3 (on my youtube cahanel) for more information.
 
 ### Orders   
- - The orders module in `modules/order.py` is also simple to use. We can both dynamically create and use preset orders. For preset orders it is as simple as `order.submit(order.presets.equity.buyLimited("AMD", 1, 90))` (limit-buy 1x AMD at a price of $90.00), or `order.submit(order.presets.equity.buyMarket("AMD", 1))` (market-buy 1x AMD). 
+ - The orders module in `modules/order.py` is also simple to use. We can both dynamically create and use preset orders. For preset orders it is as simple as `order.submit(order.presets.equity.buyLimited("AMD", 1, 90))` (limit-buy 1x AMD at a price of $90.00), or `order.submit(order.presets.equity.buyMarket("AMD", 1))` (market-buy 1x AMD). Dynamic order creation is shown in main.py.
  - Orders are also protected, meaning that if your order's price is significantly over market price then the order will not be sent, the threshold/limit can be set in `modules/universe.preferences.orderDeltaLimit`.
  - With limit orders a predictive model evaluates the execution probability by using the ask/bid ratio and price difference percentage, this equation can be seen in the appendix (below)
  - Why not protect an order - a protected order is SLOW because it has to make an additional api request to get the current price of the stock, if you need a quick way to submit an order use `quickSubmit(...)`.
