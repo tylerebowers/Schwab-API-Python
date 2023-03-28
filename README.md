@@ -60,6 +60,7 @@ The modules folder contains code for main opperations:
  - Orders are also protected, meaning that if your order's price is significantly over market price then the order will not be sent, the threshold/limit can be set in `modules/universe.preferences.orderDeltaLimit`.
  - With limit orders a predictive model evaluates the execution probability by using the ask/bid ratio and price difference percentage, this equation can be seen in the appendix (below)
  - Why not protect an order? - a protected order is SLOW because it has to make an additional api request to get the current price of the stock, if you need a quick way to submit an order use `quickSubmit(...)`.
+ - An Order object can also be filled with the output of accountsAndTrading.getOrdersByPath(): this function returns a list of all current orders for your account, so you would want to make Order objects in a loop or just select the one you want. The example here: `anOrder = order.Order(accountsAndTrading.getOrdersByPath()[0])` gets the first order in your TD account and creates an Order object in the variable `anOrder`.
 
 ### Initialization
 main.py initializes below main() in `if __name__ == '__main__':` each call is described below:
