@@ -209,7 +209,7 @@ class Order:
                "accountId", "orderActivityCollection", "replacingOrderCollection",
                "childOrderStrategies", "statusDescription")
 
-    def __init__(self, session=None, duration=None, orderType=None, cancelTime=None, complexOrderStrategyType=None,
+    def __init__(self, fromDict=None, session=None, duration=None, orderType=None, cancelTime=None, complexOrderStrategyType=None,
                  quantity=None, filledQuantity=None, remainingQuantity=None, requestedDestination=None,
                  destinationLinkName=None, releaseTime=None, stopPrice=None, stopPriceLinkBasis=None,
                  stopPriceLinkType=None, stopPriceOffset=None, stopType=None, priceLinkBasis=None, priceLinkType=None,
@@ -252,6 +252,9 @@ class Order:
         self.replacingOrderCollection = replacingOrderCollection
         self.childOrderStrategies = childOrderStrategies
         self.statusDescription = statusDescription
+        if fromDict is not None and type(fromDict) == dict:
+            for key, value in fromDict.items():
+                setattr(self, key, value)
 
     def addLeg(self, leg):
         if self.orderLegCollection is None: self.orderLegCollection = []
@@ -285,7 +288,8 @@ class Order:
         if 'orderLegCollection' in orderDict.keys():
             legs = []
             for leg in orderDict['orderLegCollection']:
-                legs.append(leg.__dict__())
+                if type(leg) == Leg: legs.append(leg.__dict__())
+                else: legs.append(leg)
             orderDict['orderLegCollection'] = legs
             return orderDict
         else:
