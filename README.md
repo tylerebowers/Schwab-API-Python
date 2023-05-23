@@ -1,9 +1,10 @@
 # TD-Ameritrade-API-Python-Client  
-In 2023 TD is moving to schwab so some significant changes may be needed soon.     
+In 2023 TD is moving to schwab so some significant changes may be needed soon.       
+Next update planned for release in June 2023.
 Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
-1. `pip3 install requests pycron window-terminal websockets pandas SQLAlchemy`    
+1. `pip3 install requests window-terminal websockets pandas SQLAlchemy`    
 2. Review preferences and credentials in modules/universe.py (specifically consumerKey, accountNumber (for streaming), and callbackUrl)
 3. Start by running from main.py
 
