@@ -1,6 +1,6 @@
 # TD-Ameritrade-API-Python-Client  
-In 2023 TD is moving to schwab so some significant changes may be needed soon.       
-Next update planned for release in June 2023.
+In preperation for the Schwab integration please create a Schwab developer account [here](https://beta-developer.schwab.com/).
+Next update planned for release after Schwab's API access is working.
 Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
@@ -8,6 +8,8 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 2. Review preferences and credentials in modules/universe.py (specifically consumerKey, accountNumber (for streaming), and callbackUrl)
 3. Start by running from main.py
 
+## Effective summer 2023:
+ - Progress on modules is paused until this program can work with Schwab's API.
 
 ## What can this program do?
  - Access all api funtions
@@ -19,7 +21,7 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
  - Dynamically create and submit orders
  - Protect limit orders that are far over market price
  ### TBD
- - Algorithmic / Probability paper money (25% complete)
+ - Algorithmic / Probability paper money (35% complete)
  - Statistics and analysis functions (not started)
 
 
