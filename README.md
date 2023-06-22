@@ -1,6 +1,6 @@
 # TD-Ameritrade-API-Python-Client  
-In preperation for the Schwab integration please create a Schwab developer account [here](https://beta-developer.schwab.com/).
-Next update planned for release after Schwab's API access is working.
+In preperation for the Schwab integration please create a Schwab developer account [here](https://beta-developer.schwab.com/).     
+Next update planned for release after Schwab's API access is working.     
 Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
