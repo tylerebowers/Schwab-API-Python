@@ -1,7 +1,7 @@
 """
 This file contains commands to access the database
 Coded by Tyler Bowers
-Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Wrapper
+Github: https://github.com/tylerebowers/TD-Ameritrade-API-Python-Client
 """
 
 import psycopg2 as psql
@@ -11,16 +11,58 @@ from modules import universe
 from sqlalchemy import create_engine, text
 
 
+class postgresqlVariables:
+    connection = None
+    cursor = None
+    engine = None
+    fieldDatatypes = {
+        "CHART_EQUITY": ("varchar(32)", "float8", "float8", "float8", "float8", "float8", "bigint", "bigint", "int"),
+        "CHART_FUTURES": ("varchar(32)", "bigint", "float8", "float8", "float8", "float8", "float8"),
+        "CHART_HISTORY_FUTURES": ("varchar(32)", "bigint", "float8", "float8", "float8", "float8", "float8"),
+        "QUOTE": (
+            "varchar(32)", "float4", "float4", "float4", "float4", "float4", "char(1)", "char(1)", "bigint", "float4",
+            "int", "int", "float4", "float4", "char(1)", "float4", "char(1)", "bool", "bool", "float4", "float4",
+            "Int", "Int", "Int", "float4", "varchar(32)", "char(1)", "int", "float4", "float4", "float4", "float4",
+            "float4", "float4", "float4", "Int", "Int", "float4", "float4", "varchar(32)", "varchar(32)", "bool",
+            "bool", "float4", "float4", "int", "int", "float4", "varchar(32)", "float8", "bigint", "bigint", "bigint"),
+        "OPTION": (
+            "varchar(32)", "varchar(32)", "float4", "float4", "float4", "float4", "float4", "float4", "bigint", "int",
+            "float4", "bigint", "bigint", "float4", "Int", "Int", "int", "float4", "int", "float4", "float4", "float4",
+            "float4", "float4", "float4", "char(1)", "varchar(32)", "int", "varchar(32)", "float4", "int", "int",
+            "float4", "float4", "float4", "float4", "float4", "varchar(32)", "float4", "float8", "char(1)",
+            "float8"),
+        "LEVELONE_FUTURES": (
+            "varchar(32)", "float8", "float8", "float8", "bigint", "bigint", "char(1)", "char(1)", "float8",
+            "bigint", "bigint", "bigint", "float8", "float8", "float8", "char(1)", "varchar(32)", "char(1)",
+            "float8", "float8", "float8", "varchar(32)", "varchar(32)", "int", "float8", "float8",
+            "float8",
+            "varchar(32)", "varchar(32)", "varchar(32)", "bool", "float8", "bool", "float8", "varchar(32)",
+            "bigint"),
+        "LEVELONE_FOREX": (
+            "varchar(32)", "float8", "float8", "float8", "bigint", "bigint", "float8", "bigint", "bigint", "bigint",
+            "float8", "float8", "float8", "char(1)", "varchar(32)", "float8", "float8", "float8",
+            "varchar(32)", "Int", "varchar(32)", "float8", "float8", "varchar(32)", "varchar(32)", "bool",
+            "varchar(32)", "float8", "float8", "float8"),
+        "LEVELONE_FUTURES_OPTIONS": (
+            "varchar(32)", "float8", "float8", "float8", "bigint", "bigint", "char(1)", "char(1)",
+            "float8", "bigint", "bigint", "bigint", "float8", "float8", "float8", "char(1)",
+            "varchar(32)", "char(1)", "float8", "float8", "float8", "varchar(32)", "varchar(32)",
+            "int", "float8", "float8", "float8", "varchar(32)", "varchar(32)", "varchar(32)",
+            "bool", "float8", "bool", "float8", "varchar(32)", "bigint"), "NEWS_HEADLINE": (
+            "varchar(32)", "float8", "bigint", "varchar(32)", "char(1)", "varchar(32)", "varchar(32)", "integer",
+            "varchar(32)", "bool", "char(1)"), "TIMESALE": ("varchar(32)", "bigint", "float8", "float8", "bigint")}
+
+
 def DBConnect():
     try:
-        universe.database.connection = psql.connect(
+        postgresqlVariables.connection = psql.connect(
             host=universe.credentials.postgresqlHost,
             user=universe.credentials.postgresqlUsername,
             password=universe.credentials.postgresqlPassword,
             database=universe.credentials.postgresqlDatabase
         )
-        universe.database.cursor = universe.database.connection.cursor()
-        universe.database.engine = create_engine(
+        postgresqlVariables.cursor = postgresqlVariables.connection.cursor()
+        postgresqlVariables.engine = create_engine(
             f'postgresql+psycopg2://{universe.credentials.postgresqlUsername}:{universe.credentials.postgresqlPassword}@{universe.credentials.postgresqlHost}/{universe.credentials.postgresqlDatabase}').connect()
         universe.preferences.usingDatabase = True
     except Exception as e:
@@ -30,9 +72,9 @@ def DBConnect():
 
 
 def DBSetup():  # only needs to be run once, won't make any changes if database is already properly setup
-    for key in universe.stream.fieldAliases:
-        universe.database.cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {key}")
-    universe.database.connection.commit()
+    for key in universe.streamFieldAliases:
+        postgresqlVariables.cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {key}")
+    postgresqlVariables.connection.commit()
 
 
 def cleanTimestamp(timestamp, milliseconds=False):  # formats to epoch in seconds (or milliseconds)
@@ -52,7 +94,7 @@ def cleanTimestamp(timestamp, milliseconds=False):  # formats to epoch in second
 
 class Snapshot:  # a single moment of data for a particular ticker
 
-    def __init__(self, service, symbol, timestamp=0, dataDict=None, fields=None, fillFromPrevious=True):
+    def __init__(self, service, symbol, timestamp=0, dataDict=None, fillFromPrevious=True):
         try:
             self.symbol = symbol.upper()  # ticker
             self.service = service.upper()
@@ -74,7 +116,7 @@ class Snapshot:  # a single moment of data for a particular ticker
     def toPrettyString(self):
         try:
             streamString = f"{self.service.upper()}.{self.symbol.upper()}; {self.datetime.strftime('%c')}"
-            for attribute in self.attributes:  streamString += f", {universe.stream.fieldAliases[self.service][int(attribute)]}: {self.attributes[attribute]}"
+            for attribute in self.attributes:  streamString += f", {universe.streamFieldAliases[self.service][int(attribute)]}: {self.attributes[attribute]}"
             return streamString
         except Exception as e:
             universe.terminal.error(f"There was a problem in Snapshot toPrettyString: {e}")
@@ -83,7 +125,7 @@ class Snapshot:  # a single moment of data for a particular ticker
         selfDict = {"service": self.service, "symbol": self.symbol,
                     "datetime": datetime.fromtimestamp(self.attributes.get('timestamp', 0))}
         if useAliases:
-            for attribute in self.attributes: selfDict[universe.stream.fieldAliases[self.service][int(attribute)]] = \
+            for attribute in self.attributes: selfDict[universe.streamFieldAliases[self.service][int(attribute)]] = \
             self.attributes[attribute]
         else:
             selfDict.update(self.attributes)
@@ -111,7 +153,7 @@ class Snapshot:  # a single moment of data for a particular ticker
                     if type(toGet) == int:
                         return self.attributes.get(str(toGet))
                     elif type(toGet) == str:
-                        return self.attributes.get(str(universe.stream.fieldAliases.index(toGet)))
+                        return self.attributes.get(str(universe.streamFieldAliases.index(toGet)))
                     else:
                         return None
                 except Exception as e:
@@ -124,27 +166,27 @@ def DBCreateTable(service, keys, fields):
     if type(fields) != list: fields = [fields]
     try:
         for key in keys:
-            universe.database.cursor.execute(
+            postgresqlVariables.cursor.execute(
                 f"SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = '{service.lower()}' AND tablename  = '{key.lower()}')")
-            if bool(universe.database.cursor.fetchone()[0]):
-                universe.database.cursor.execute(
+            if bool(postgresqlVariables.cursor.fetchone()[0]):
+                postgresqlVariables.cursor.execute(
                     f"ALTER TABLE {service}.{key} ADD COLUMN IF NOT EXISTS Timestamp timestamp")
                 for field in fields:
                     if int(field) != 0:
-                        colName = universe.stream.fieldAliases.get(service.upper())[int(field)]
-                        colDatatype = universe.stream.fieldDatatypes.get(service.upper())[int(field)]
-                        universe.database.cursor.execute(
+                        colName = universe.streamFieldAliases.get(service.upper())[int(field)]
+                        colDatatype = postgresqlVariables.fieldDatatypes.get(service.upper())[int(field)]
+                        postgresqlVariables.cursor.execute(
                             f"ALTER TABLE {service}.{key} ADD COLUMN IF NOT EXISTS {colName} {colDatatype}")
             else:
                 attributes = "(Timestamp timestamp"
                 for i, field in enumerate(fields):
                     if i != 0:
                         attributes += ", "
-                        attributes += universe.stream.fieldAliases.get(service.upper())[field] + " " + \
-                                      universe.stream.fieldDatatypes.get(service.upper())[field]
+                        attributes += universe.streamFieldAliases.get(service.upper())[field] + " " + \
+                                      postgresqlVariables.fieldDatatypes.get(service.upper())[field]
                 attributes += ")"
-                universe.database.cursor.execute(f"CREATE TABLE IF NOT EXISTS {service}.{key} {attributes}")
-        universe.database.commit()
+                postgresqlVariables.cursor.execute(f"CREATE TABLE IF NOT EXISTS {service}.{key} {attributes}")
+        postgresqlVariables.connection.commit()
     except Exception as e:
         universe.terminal.error(f"There was a problem in DBCreateTable (adding a new table to the database): {e}")
         return None
@@ -158,13 +200,13 @@ def DBAddSnapshot(snap):  # need check if database exists
         values = f"(to_timestamp({snap.timestamp})"
         for field in snap.attributes:
             if field.isdigit():
-                columns += f", {universe.stream.fieldAliases.get(service.upper())[int(field)]}"
+                columns += f", {universe.streamFieldAliases.get(service.upper())[int(field)]}"
                 values += f", {snap.attributes.get(field)}"
         columns += ")"
         values += ")"
         if len(columns) > 12 and len(values) > 32 and symbol is not None:
-            universe.database.cursor.execute(f"INSERT INTO {service}.{symbol} {columns} VALUES {values}")
-            universe.database.connection.commit()
+            postgresqlVariables.cursor.execute(f"INSERT INTO {service}.{symbol} {columns} VALUES {values}")
+            postgresqlVariables.connection.commit()
     except Exception as e:
         universe.terminal.error(f"There was a problem in DBAddSnapshot (adding a snapshot to the database): {e}")
         return None
@@ -179,13 +221,13 @@ def DBAddData(service, ticker, timestamp, data):  # should check if database exi
             if key.isdigit():
                 columns += ", "
                 values += ", "
-                columns += universe.stream.fieldAliases.get(service.upper())[int(key)]
+                columns += universe.streamFieldAliases.get(service.upper())[int(key)]
                 values += str(data.get(key))
         columns += ")"
         values += ")"
-        if len(columns) > 16 and len(values) > 32: universe.database.cursor.execute(
+        if len(columns) > 16 and len(values) > 32: postgresqlVariables.cursor.execute(
             f"INSERT INTO {service}.{ticker} {columns} VALUES {values}")
-        universe.database.connection.commit()
+        postgresqlVariables.connection.commit()
     except Exception as e:
         universe.terminal.error(f"There was a problem in DBAddData (adding data to the database): {e}")
         return None
@@ -197,7 +239,7 @@ def DBGetTable(service, ticker, select="*", lowerBound=None, upperBound=None, ba
             backwards = cleanTimestamp(backwards)
             lowerBound = (datetime.now().timestamp() - backwards)
             sql = f"select {select} from {service.upper()}.{ticker.upper()} where timestamp >= to_timestamp({lowerBound})"
-            return pd.DataFrame(universe.database.engine.execute(text(sql)))
+            return pd.DataFrame(postgresqlVariables.engine.execute(text(sql)))
         if lowerBound is not None: lowerBound = cleanTimestamp(lowerBound)
         if upperBound is not None: upperBound = cleanTimestamp(upperBound)
         if lowerBound is not None and upperBound is not None:
@@ -208,7 +250,7 @@ def DBGetTable(service, ticker, select="*", lowerBound=None, upperBound=None, ba
             sql = f"select {select} from {service.upper()}.{ticker.upper()} where timestamp <= to_timestamp({lowerBound})"
         else:
             sql = f"select {select} from {service.upper()}.{ticker.upper()}"
-        return pd.DataFrame(universe.database.engine.execute(text(sql)))
+        return pd.DataFrame(postgresqlVariables.engine.execute(text(sql)))
     except Exception as e:
         universe.terminal.error(f"There was a problem in DBGetTable (getting table from the database): {e}")
         return None
@@ -219,7 +261,7 @@ def DFCreateTable(service, ticker, columns):
         colNames = [("0", "timestamp")]
         for key in columns:
             if (type(key) == int or key.isdigit()) and int(key) != 0:
-                colNames.append((str(key), universe.stream.fieldAliases.get(service.upper())[int(key)]))
+                colNames.append((str(key), universe.streamFieldAliases.get(service.upper())[int(key)]))
         df = pd.DataFrame(columns=colNames)
         df.columns = pd.MultiIndex.from_tuples(df.columns)
         universe.dataframes[service.upper()][ticker.upper()] = df

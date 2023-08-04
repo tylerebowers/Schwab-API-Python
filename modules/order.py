@@ -1,10 +1,10 @@
 from modules import universe
-from apis import quotes
+from api import quotes
 import requests
 import math
 
 
-def help(term):
+def help(term):  # example: term = "order.session"; returns : "'NORMAL' or 'AM' or 'PM' or 'SEAMLESS'"
     definitions = {
         "order": {
             'session': "'NORMAL' or 'AM' or 'PM' or 'SEAMLESS'",
@@ -312,12 +312,12 @@ def wizard(instruction, symbol, quantity, price=0, **kwargs):
 """
 
 
-class _Presets:  # https://developer.tdameritrade.com/content/place-order-samples
+class presets:  # https://developer.tdameritrade.com/content/place-order-samples
 
 
-    class _Equity:
-
-        def _SimpleAssembler(self, orderType, duration, instruction, quantity, symbol, price=None):
+    class equity:
+        @staticmethod
+        def _SimpleAssembler(orderType, duration, instruction, quantity, symbol, price=None):
             toRet = {
                 "orderType": orderType,
                 "session": "NORMAL",
@@ -337,19 +337,24 @@ class _Presets:  # https://developer.tdameritrade.com/content/place-order-sample
             if price is not None: toRet['price'] = price
             return toRet
 
-        def buyMarket(self, symbol, quantity, duration="DAY"):
-            return self._SimpleAssembler("MARKET", duration, "BUY", quantity, symbol)
+        @staticmethod
+        def buyMarket(symbol, quantity, duration="DAY"):
+            return presets.equity._SimpleAssembler("MARKET", duration, "BUY", quantity, symbol)
 
-        def sellMarket(self, symbol, quantity, duration="DAY"):
-            return self._SimpleAssembler("MARKET", duration, "SELL", quantity, symbol)
+        @staticmethod
+        def sellMarket(symbol, quantity, duration="DAY"):
+            return presets.equity._SimpleAssembler("MARKET", duration, "SELL", quantity, symbol)
 
-        def buyLimited(self, symbol, quantity, limit, duration="DAY"):
-            return self._SimpleAssembler("LIMIT", duration, "BUY", quantity, symbol, limit)
+        @staticmethod
+        def buyLimited(symbol, quantity, limit, duration="DAY"):
+            return presets.equity._SimpleAssembler("LIMIT", duration, "BUY", quantity, symbol, limit)
 
-        def sellLimited(self, symbol, quantity, limit, duration="DAY"):
-            return self._SimpleAssembler("LIMIT", duration, "SELL", quantity, symbol, limit)
+        @staticmethod
+        def sellLimited(symbol, quantity, limit, duration="DAY"):
+            return presets.equity._SimpleAssembler("LIMIT", duration, "SELL", quantity, symbol, limit)
 
-        def sellTrailingStop(self, symbol, quantity, stopPriceOffset):
+        @staticmethod
+        def sellTrailingStop(symbol, quantity, stopPriceOffset):
             return {
                 "complexOrderStrategyType": "NONE",
                 "orderType": "TRAILING_STOP",
@@ -371,11 +376,10 @@ class _Presets:  # https://developer.tdameritrade.com/content/place-order-sample
                 ]
             }
 
-    equity = _Equity()
 
-    class _Option:
-
-        def buyLimited(self, symbol, quantity, limit, duration="DAY"):
+    class option:
+        @staticmethod
+        def buyLimited(symbol, quantity, limit, duration="DAY"):
             return {
                 'orderType': 'LIMIT',
                 'session': 'NORMAL',
@@ -392,7 +396,8 @@ class _Presets:  # https://developer.tdameritrade.com/content/place-order-sample
                 ]
             }
 
-        def sellLimited(self, symbol, quantity, limit, duration="DAY"):
+        @staticmethod
+        def sellLimited(symbol, quantity, limit, duration="DAY"):
             return {
                 'orderType': 'LIMIT',
                 'session': 'NORMAL',
@@ -409,7 +414,8 @@ class _Presets:  # https://developer.tdameritrade.com/content/place-order-sample
                 ]
             }
 
-        def buyVerticalCallSpread(self, buySymbol, sellSymbol, buyQuantity, sellQuantity, price):
+        @staticmethod
+        def buyVerticalCallSpread(buySymbol, sellSymbol, buyQuantity, sellQuantity, price):
             return {
                 "orderType": "NET_DEBIT",
                 "session": "NORMAL",
@@ -436,10 +442,6 @@ class _Presets:  # https://developer.tdameritrade.com/content/place-order-sample
                 ]
             }
 
-    option = _Option()
-
-
-presets = _Presets()
 
 
 def submit(order, protected=True, probability=True):
@@ -456,7 +458,11 @@ def submit(order, protected=True, probability=True):
             symbol = leg.get("instrument").get("symbol", None)
             resp = quotes.getQuote(symbol).get(symbol, {})
             price = (resp.get("askPrice", -10) + resp.get("bidPrice", -10)) / 2
-            priceEpsilon = (order.get("price") - price) / price
+            if price == 0:
+                universe.terminal.error("The order symbol is probably incorrect, please correct this.")
+                priceEpsilon = 100
+            else:
+                priceEpsilon = (order.get("price") - price) / price
             if resp.get("askSize", 0) == 0 or resp.get("bidSize", 0) == 0:
                 abSizeRatio = 1
             else:
@@ -483,8 +489,11 @@ def quickSubmit(order):
 
 
 def _OrderResponseHandler(response):
-    if universe.preferences.printResponseCode: print(response)
+    #add to a list
+    #if universe.preferences.printResponseCode: print(response)
     if response.ok:
         universe.terminal.info("Order received successfully")
     else:
-        universe.terminal.error("Order improperly formatted (are you missing some variables in it?)")
+        universe.terminal.error(f"Order improperly formatted ({response})(are you missing some variables in it?)")
+
+# need to stream ACCT_ACTIVITY to get update on orders in account
