@@ -1,15 +1,12 @@
 # TD-Ameritrade-API-Python-Client  
 In preperation for the Schwab integration please create a Schwab developer account [here](https://beta-developer.schwab.com/).     
-Next update planned for release after Schwab's API access is working.     
+Next update planned in < 2 weeks, next is after Schwab's API access is working.     
 Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
 1. `pip3 install requests window-terminal websockets pandas SQLAlchemy`    
 2. Review preferences and credentials in modules/universe.py (specifically consumerKey, accountNumber (for streaming), and callbackUrl)
 3. Start by running from main.py
-
-## Effective summer 2023:
- - Progress on modules is paused until this program can work with Schwab's API.
 
 ## What can this program do?
  - Access all api funtions
