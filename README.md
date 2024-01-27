@@ -1,7 +1,12 @@
-# TD-Ameritrade-API-Python-Client  
+# Schwab-API-Python 
+This is an unofficial python program to access the Schwab api.    
 In preparation for the Schwab integration please create a Schwab developer account [here](https://beta-developer.schwab.com/).     
-Next update planned after Schwab's API access is working.     
+Next update planned shortly after Schwab's API access is working.     
 Join the [Discord group](https://discord.gg/m7SSjr9rs9)
+
+
+
+# Documentation below is for the original TD Ameritrade API
 
 ## Quick setup
 1. Python version 3.11 or higher is recommended.     
