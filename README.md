@@ -13,7 +13,8 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## What can this program do?
  - Authenticate and access the api
- ### TBD 
+ ### TBD
+ - Automatic refresh token updates. (not started)
  - Functions for all api functions (25% complete)
  - Auto "access token" updates (90% complete) 
  - Stream all data types (not started) (waiting on schwab)
