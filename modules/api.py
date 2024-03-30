@@ -5,7 +5,6 @@ Github: https://github.com/tylerebowers/Schwab-API-Python
 """
 
 import json
-import time
 import requests
 from modules import universe
 from datetime import datetime
@@ -14,16 +13,17 @@ from datetime import datetime
 def initialize():
 
     if len(universe.credentials.appKey) != 32 or len(universe.credentials.appSecret) != 16:
-        universe.terminal.error("No app key or app secret found, please add your app key in modules/universe.credentials.appKey)")
+        universe.terminal.error("No app key or app secret found, please add your app key in modules/universe.credentials.appKey")
         quit()
 
-    # show user when tokens were last updated
+    # load token from file
     _TokenManager("init")  # this also sets universe variables for tokens and token timeouts
-    universe.terminal.info(universe.tokens.accessTokenDateTime.strftime("Access token last updated: %d/%m/%y %H:%M:%S"))
-    universe.terminal.info(universe.tokens.refreshTokenDateTime.strftime("Refresh token last updated: %d/%m/%y %H:%M:%S"))
-
+    # show user when tokens were last updated
+    universe.terminal.info(universe.tokens.accessTokenDateTime.strftime("Access token last updated: %Y-%m-%d %H:%M:%S"))
+    universe.terminal.info(universe.tokens.refreshTokenDateTime.strftime("Refresh token last updated: %Y-%m-%d %H:%M:%S"))
     # check if tokens need to be updated and update if needed
     _UpdateTokens()
+
 
     # show user when tokens will expire & complete initialization
     universe.terminal.warning(f"Access token expires in {universe.tokens.accessTokenTimeout - (datetime.now() - universe.tokens.accessTokenDateTime).seconds} seconds!")
@@ -69,12 +69,12 @@ def _RefreshTokenUpdate():
 
 def _TokenManager(todo="get", att=None, rtt=None, td=None):
     fileLocation = "modules/tokens.txt"
-    accessTokenTimeFormat = "Access token last updated: %d/%m/%y %H:%M:%S\n"
-    refreshTokenTimeFormat = "Refresh token last updated: %d/%m/%y %H:%M:%S\n"
+    accessTokenTimeFormat = "Access token last updated: %Y-%m-%d %H:%M:%S\n"
+    refreshTokenTimeFormat = "Refresh token last updated: %Y-%m-%d %H:%M:%S\n"
 
     def writeTokenVars(natt, nrtt, ntd):
         universe.tokens.refreshToken = ntd.get("refresh_token")
-        universe.tokens.access_token = ntd.get("access_token")
+        universe.tokens.accessToken = ntd.get("access_token")
         universe.tokens.accessTokenDateTime = natt
         universe.tokens.refreshTokenDateTime = nrtt
         universe.tokens.id_token = ntd.get("id_token")
@@ -109,6 +109,17 @@ def _TokenManager(todo="get", att=None, rtt=None, td=None):
         _RefreshTokenUpdate()
 
 
+def _PostAccessTokenAutomated(grant_type, code):
+    import base64
+    headers = {'Authorization': f'Basic {base64.b64encode(bytes(f"{universe.credentials.appKey}:{universe.credentials.appSecret}", "utf-8")).decode("utf-8")}', 'Content-Type': 'application/x-www-form-urlencoded'}
+    if grant_type == 'authorization_code': data = {'grant_type': 'authorization_code', 'code': code, 'redirect_uri': universe.credentials.callbackUrl} #gets access and refresh tokens using authorization code
+    elif grant_type == 'refresh_token': data = {'grant_type': 'refresh_token', 'refresh_token': code} #refreshes the access token
+    else:
+        universe.terminal.error("Invalid grant type")
+        return None
+    return _ResponseHandler(requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data))
+
+
 def _ResponseHandler(response):
     try:
         if response.ok:
@@ -121,103 +132,94 @@ def _ResponseHandler(response):
         return None
 
 
-def _PostAccessTokenAutomated(grant_type, code):
-    import base64
-    headers = {'Authorization': f'Basic {base64.b64encode(bytes(f"{universe.credentials.appKey}:{universe.credentials.appSecret}", "utf-8")).decode("utf-8")}', 'Content-Type': 'application/x-www-form-urlencoded'}
-    if grant_type == 'authorization_code': data = {'grant_type': 'authorization_code', 'code': code, 'redirect_uri': universe.credentials.callbackUrl} #gets access and refresh tokens using authorization code
-    elif grant_type == 'refresh_token': data = {'grant_type': 'refresh_token', 'refresh_token': code} #refreshes the access token
-    else:
-        universe.terminal.error("Invalid grant type")
-        return None
-    return _ResponseHandler(requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data))
-
-
-"""
-
-def _checkTokensDaemon():
+def _CheckTokensDaemon():
+    import time
     while True:
-        checkTokensManual()
+        _UpdateTokens()
         time.sleep(60)
 
+"""
+Below here are all the api calls and functions that they use.
+"""
+
+# base url for api requests
+base_url = "https://api.schwabapi.com/trader/v1/"
 
 
-def _kwargsHandler(args, kwargs):
-    params = {}
-    for key, value in kwargs.items():
-        if key in args: params[key] = value
+def _ParamsParser(params):
+    for key in list(params.keys()):
+        if params[key] is None: del params[key]
     return params
 
-
-base_url = "https://api.schwabapi.com/trader/v1/"
 
 class accounts:
 
     @staticmethod
     def accountNumbers():
-        return _responseHandler(requests.get(f'{base_url}/accounts/accountNumbers', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(requests.get(f'{base_url}/accounts/accountNumbers', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
-    def accounts():
-        return _responseHandler(
-            requests.get(f'{base_url}/accounts/', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+    def accounts(fields=None):
+        return _ResponseHandler(
+            requests.get(f'{base_url}/accounts/', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
 
     @staticmethod
-    def accountNumber():
-        return _responseHandler(requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+    def accountNumber(accountNumber=universe.credentials.accountNumber, fields=None):
+        return _ResponseHandler(requests.get(f'{base_url}/accounts/{accountNumber}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
 
-'''
+"""
 class orders:
     @staticmethod
     def accountOrders(accountNumber, maxResults, fromEnteredTime, toEnteredTime, status):
-        return _responseHandler(
-            requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
     def placeOrder():
-        return _responseHandler(
-            requests.post(f'{base_url}/accounts/{universe.credentials.accountNumber}/positions/', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.post(f'{base_url}/accounts/{universe.credentials.accountNumber}/positions/', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
     def getOrder():
-        return _responseHandler(
-            requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/{orderId}', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
     def cancelOrder():
-        return _responseHandler(
-            requests.delete(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/{orderId}', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.delete(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
     def replaceOrder():
-        return _responseHandler(
-            requests.put(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/{orderId}', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.put(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
     def orders():
-        return _responseHandler(
-            requests.get(f'{base_url}/orders', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.get(f'{base_url}/orders', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
     def previewOrder():
-        return _responseHandler(
-            requests.post(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.post(f'{base_url}/accounts/{universe.credentials.accountNumber}/orders', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
 class Transactions:
     @staticmethod
     def transactions():
-        return _responseHandler(
-            requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}/transactions', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+        return _ResponseHandler(
+            requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}/transactions', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
     @staticmethod
     def accountTransaction():
-        return _responseHandler(
+        return _ResponseHandler(
             requests.get(f'{base_url}/accounts/{universe.credentials.accountNumber}/transactions/{transactionId}',
-                         headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
+                         headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
 
 class UserPreference:
     @staticmethod
     def transactions():
-        return _responseHandler(
-            requests.get(f'{base_url}/userPreference', headers={'Authorization': 'Bearer ' + universe.tokens.accessToken}))
-'''
+        return _ResponseHandler(
+            requests.get(f'{base_url}/userPreference', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
+
 """

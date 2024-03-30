@@ -5,18 +5,18 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 
 ## Quick setup
-1. Python version 3.11 or higher is recommended.     
-2. `pip3 install requests`
-3. Create a new Schwab developer app with callback url "https://127.0.0.1" and wait for approval.
-4. Paste keys in modules/universe.py specifically tokens.appKey, tokens.appSecret.
-5. Start by running from main.py
+1. Create a new Schwab individual developer app with callback url "https://127.0.0.1" and wait for approval.
+2. Python version 3.11 or higher is recommended.     
+3. `pip3 install requests`
+4. Paste keys in modules/universe.py specifically tokens.appKey and tokens.appSecret.
+5. Start by running the main.py file.
 
 ## What can this program do?
  - Authenticate and access the api
  ### TBD
- - Automatic refresh token updates. (not started)
- - Functions for all api functions (25% complete)
+ - Functions for all api functions (30% complete)
  - Auto "access token" updates (90% complete) 
+ - Automatic refresh token updates. (not started)
  - Stream all data types (not started) (waiting on schwab)
 
 
@@ -36,5 +36,6 @@ The modules folder contains code for main operations:
 ### Initialization
 main.py initializes below main() in `if __name__ == '__main__':` each call is described below:
  1. `api.initialize()` # This calls a function that checks if the access or refresh token need to be re-authenticated. It also adds the tokens and expire times to variables in `universe.py`
+ 2. `main()` # This is where you put your code to be run.
 
 

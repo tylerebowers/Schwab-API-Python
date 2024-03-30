@@ -3,7 +3,8 @@ import threading
 
 
 def main():
-    print()
+    print(api.accounts.accountNumbers())
+    print(api.accounts.accounts())
     #You now have access to the api 
     #The tokens are stored here:
     #universe.tokens.accessToken
