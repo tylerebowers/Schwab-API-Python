@@ -1,3 +1,0 @@
-Access token last updated: 04/08/22 15:21:11
-Refresh token last updated: 16/07/22 23:29:26
-{"access_token": "nonthing yet", "refresh_token": "nothing yet", "scope": "PlaceTrades AccountAccess MoveMoney", "expires_in": 1800, "refresh_token_expires_in": 7776000, "token_type": "Bearer"}
