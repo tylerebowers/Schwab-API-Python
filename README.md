@@ -6,9 +6,10 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
 1. Python version 3.11 or higher is recommended.     
-2. `pip3 install requests`    
-2. Review keys in modules/universe.py specifically tokens.appKey, tokens.appSecret (and callbackUrl if applicable)
-3. Start by running from main.py
+2. `pip3 install requests`
+3. Create a new Schwab developer app with callback url "https://127.0.0.1" and wait for approval.
+4. Paste keys in modules/universe.py specifically tokens.appKey, tokens.appSecret.
+5. Start by running from main.py
 
 ## What can this program do?
  - Authenticate and access the api
