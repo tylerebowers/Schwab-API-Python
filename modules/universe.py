@@ -11,6 +11,7 @@ class credentials:
     callbackUrl = "https://127.0.0.1"
     accountUsername = ""
     accountNumber = ""
+    encryptedId = ""
 
 
 """

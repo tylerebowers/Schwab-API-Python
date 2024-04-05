@@ -13,9 +13,9 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## What can this program do?
  - Authenticate and access the api
- ### TBD
- - Functions for all api functions (30% complete)
- - Auto "access token" updates (90% complete) 
+ - Functions for all api functions 
+ - Auto "access token" updates
+ ### TBD 
  - Automatic refresh token updates. (not started)
  - Stream all data types (not started) (waiting on schwab)
 
@@ -32,11 +32,12 @@ The modules folder contains code for main operations:
  - `tokens.txt` contains api tokens as well as dates for when they expire.
  - `universe.py` contains universal variables that need to be accessed across many functions such as credentials, preferences, tokens, etc.
 
-
+<!---
 ### Initialization
 main.py initializes below main() in `if __name__ == '__main__':` each call is described below:
  1. `api.initialize()` # This calls a function that checks if the access or refresh token need to be re-authenticated. It also adds the tokens and expire times to variables in `universe.py`
  2. `main()` # This is where you put your code to be run.
+-->
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
