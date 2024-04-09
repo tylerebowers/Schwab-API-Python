@@ -18,16 +18,6 @@ class credentials:
 Below here are variables for functionality of the program; they shouldn't be changed
 """
 
-class tokens:
-    refreshToken = None
-    accessToken = None
-    idToken = None
-    refreshTokenDateTime = None
-    accessTokenDateTime = None
-    refreshTokenTimeout = 7 # in days
-    accessTokenTimeout = 1800 # in seconds
-
-
 class terminal:
     @staticmethod
     def info(string): print(f"\033[92m{'[INFO]: '}\033[00m{string}")

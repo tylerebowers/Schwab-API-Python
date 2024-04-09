@@ -7,17 +7,19 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 ## Quick setup
 1. Create a new Schwab individual developer app with callback url "https://127.0.0.1" and wait for approval.
 2. Python version 3.11 or higher is recommended.     
-3. `pip3 install requests`
+3. `pip3 install requests websockets window-terminal`
 4. Paste keys in modules/universe.py specifically tokens.appKey and tokens.appSecret.
 5. Start by running the main.py file.
 
 ## What can this program do?
- - Authenticate and access the api
- - Functions for all api functions 
- - Auto "access token" updates
+ - Authenticate and access the api (api.initialize())
+ - Functions for all api functions (examples in main.py)
+ - Auto "access token" updates (api.updateTokensAutomatic())
+ - Stream real-time data (stream.startManual())
+ - Automatically start/stop stream (stream.startAutomatic())
  ### TBD 
  - Automatic refresh token updates. (not started)
- - Stream all data types (not started) (waiting on schwab)
+ - Customizable stream response handler (20% complete)
 
 
 ## Usage and Design
@@ -31,6 +33,7 @@ The modules folder contains code for main operations:
  - `api.py` contains functions relating to api calls, requests, and automatic token checker daemons.
  - `tokens.txt` contains api tokens as well as dates for when they expire.
  - `universe.py` contains universal variables that need to be accessed across many functions such as credentials, preferences, tokens, etc.
+ - `stream.py` contains functions for streaming data from websockets.
 
 <!---
 ### Initialization
@@ -38,6 +41,7 @@ main.py initializes below main() in `if __name__ == '__main__':` each call is de
  1. `api.initialize()` # This calls a function that checks if the access or refresh token need to be re-authenticated. It also adds the tokens and expire times to variables in `universe.py`
  2. `main()` # This is where you put your code to be run.
 -->
+## License (MIT)
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

@@ -1,17 +1,12 @@
-from modules import api, universe
+from modules import api, universe, stream
 from datetime import datetime, timedelta
 import threading
 
 
 def main():
-    #You now have access to the api 
-    #The tokens are stored here:
-    #universe.tokens.accessToken
-    #universe.tokens.refreshToken
-    
     # get accounts numbers for linked accounts
     accountNumbers = api.accounts.accountNumbers()
-    universe.credentials.encryptedId = accountNumbers[0].get('hashValue') #set encryped id in universe to set for orders
+    universe.credentials.encryptedId = accountNumbers[0].get('hashValue')
     print(accountNumbers)
 
     # get positions for linked accounts
@@ -56,7 +51,7 @@ def main():
     # get a single quote
     print(api.quotes.getSingle("INTC"))
 
-    # get a option chains
+    # get option chains
     # print(api.options.chains("AAPL")) # there are a lot to print
 
     #get an option expiration chain
@@ -84,9 +79,7 @@ def main():
 
 if __name__ == '__main__':
     print("Welcome to the unofficial Schwab api interface!\nGithub: https://github.com/tylerebowers/Schwab-API-Python")
-    api.initialize() # checks tokens & loads variables
-    threads = [threading.Thread(target=main), threading.Thread(target=api._CheckTokensDaemon)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
+    api.initialize()  # checks tokens & loads variables
+    api.updateTokensAutomatic() # starts thread to update tokens automatically
+    #stream.startManual() # start the stream manually
+    main() #call the user code above

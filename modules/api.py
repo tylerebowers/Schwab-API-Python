@@ -6,8 +6,19 @@ Github: https://github.com/tylerebowers/Schwab-API-Python
 
 import json
 import requests
+import threading
 from modules import universe
 from datetime import datetime
+
+
+class tokens:
+    refreshToken = None
+    accessToken = None
+    idToken = None
+    refreshTokenDateTime = None
+    accessTokenDateTime = None
+    refreshTokenTimeout = 7 # in days
+    accessTokenTimeout = 1800 # in seconds
 
 
 def initialize():
@@ -19,25 +30,33 @@ def initialize():
     # load token from file
     _TokenManager("init")  # this also sets universe variables for tokens and token timeouts
     # show user when tokens were last updated
-    universe.terminal.info(universe.tokens.accessTokenDateTime.strftime("Access token last updated: %Y-%m-%d %H:%M:%S"))
-    universe.terminal.info(universe.tokens.refreshTokenDateTime.strftime("Refresh token last updated: %Y-%m-%d %H:%M:%S"))
+    universe.terminal.info(tokens.accessTokenDateTime.strftime("Access token last updated: %Y-%m-%d %H:%M:%S"))
+    universe.terminal.info(tokens.refreshTokenDateTime.strftime("Refresh token last updated: %Y-%m-%d %H:%M:%S"))
     # check if tokens need to be updated and update if needed
-    _UpdateTokens()
+    updateTokensManual()
 
     # show user when tokens will expire & complete initialization
-    universe.terminal.warning(f"Access token expires in {universe.tokens.accessTokenTimeout - (datetime.now() - universe.tokens.accessTokenDateTime).seconds} seconds!")
-    universe.terminal.warning(f"Refresh token expires in {universe.tokens.refreshTokenTimeout - (datetime.now() - universe.tokens.refreshTokenDateTime).days} days!")
+    universe.terminal.warning(f"Access token expires in {tokens.accessTokenTimeout - (datetime.now() - tokens.accessTokenDateTime).seconds} seconds!")
+    universe.terminal.warning(f"Refresh token expires in {tokens.refreshTokenTimeout - (datetime.now() - tokens.refreshTokenDateTime).days} days!")
     universe.terminal.info("Initialization Complete")
 
 
-def _UpdateTokens():
-    if (datetime.now() - universe.tokens.refreshTokenDateTime).days >= (universe.tokens.refreshTokenTimeout-1): #check if we need to update refresh (and access) token
+def updateTokensManual():
+    if (datetime.now() - tokens.refreshTokenDateTime).days >= (tokens.refreshTokenTimeout-1): #check if we need to update refresh (and access) token
         universe.terminal.user("The refresh token has expired, please update!") # print multiple times?
         _RefreshTokenUpdate()
-    elif ((datetime.now() - universe.tokens.accessTokenDateTime).days >= 1) or ((datetime.now() - universe.tokens.accessTokenDateTime).seconds > (universe.tokens.accessTokenTimeout - 60)): #check if we need to update access token
+    elif ((datetime.now() - tokens.accessTokenDateTime).days >= 1) or ((datetime.now() - tokens.accessTokenDateTime).seconds > (tokens.accessTokenTimeout - 60)): #check if we need to update access token
         universe.terminal.info("The access token has expired, updating automatically.")
         _AccessTokenUpdate()
     #else: universe.terminal.info("Token check passed")
+
+def updateTokensAutomatic():
+    def checker():
+        import time
+        while True:
+            updateTokensManual()
+            time.sleep(60)
+    threading.Thread(target=checker).start()
 
 
 def _AccessTokenUpdate():
@@ -46,7 +65,7 @@ def _AccessTokenUpdate():
     # get and update to the new access token
     _TokenManager("set", datetime.now(), refreshTokenFileTime, _PostAccessTokenAutomated('refresh_token', tokenDictionary.get("refresh_token")))
     # show user that we have updated the access token
-    universe.terminal.info(f"Access token updated: {universe.tokens.accessTokenDateTime}")
+    universe.terminal.info(f"Access token updated: {tokens.accessTokenDateTime}")
 
 
 def _RefreshTokenUpdate():
@@ -72,11 +91,11 @@ def _TokenManager(todo="get", att=None, rtt=None, td=None):
     refreshTokenTimeFormat = "Refresh token last updated: %Y-%m-%d %H:%M:%S\n"
 
     def writeTokenVars(natt, nrtt, ntd):
-        universe.tokens.refreshToken = ntd.get("refresh_token")
-        universe.tokens.accessToken = ntd.get("access_token")
-        universe.tokens.accessTokenDateTime = natt
-        universe.tokens.refreshTokenDateTime = nrtt
-        universe.tokens.id_token = ntd.get("id_token")
+        tokens.refreshToken = ntd.get("refresh_token")
+        tokens.accessToken = ntd.get("access_token")
+        tokens.accessTokenDateTime = natt
+        tokens.refreshTokenDateTime = nrtt
+        tokens.id_token = ntd.get("id_token")
 
     def writeTokenFile(natt, nrtt, ntd):
         with open(fileLocation, 'w') as file:
@@ -135,12 +154,6 @@ def _ResponseHandler(response):
         universe.terminal.error(f"Error in response, (Code: {response.status_code})")
 
 
-def _CheckTokensDaemon():
-    import time
-    while True:
-        _UpdateTokens()
-        time.sleep(60)
-
 """
 Below here are all the api calls and functions that they use.
 """
@@ -175,73 +188,73 @@ class accounts:
 
     @staticmethod
     def accountNumbers():  # /accounts/accountNumbers
-        return _ResponseHandler(requests.get(f'{atp_url}/accounts/accountNumbers', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
+        return _ResponseHandler(requests.get(f'{atp_url}/accounts/accountNumbers', headers={'Authorization': f'Bearer {tokens.accessToken}'}))
 
     @staticmethod
     def getLinkedAccounts(fields=None):  # /accounts
         return _ResponseHandler(
-            requests.get(f'{atp_url}/accounts/', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
+            requests.get(f'{atp_url}/accounts/', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
 
     @staticmethod  # /accounts/{accountNumber}
     def getAccount(fields=None, accountNumber=universe.credentials.encryptedId):
-        return _ResponseHandler(requests.get(f'{atp_url}/accounts/{accountNumber}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
+        return _ResponseHandler(requests.get(f'{atp_url}/accounts/{accountNumber}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
 
 
 class orders:
     @staticmethod  # /accounts/{accountNumber}/orders
     def getOrders(maxResults, fromEnteredTime, toEnteredTime, status=None, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
-            requests.get(f'{atp_url}/accounts/{accountNumber}/orders', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'accountNumber': accountNumber, 'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status})))
+            requests.get(f'{atp_url}/accounts/{accountNumber}/orders', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'accountNumber': accountNumber, 'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status})))
 
     @staticmethod  # /accounts/{accountNumber}/orders
     def placeOrder(orderObject, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
-            requests.post(f'{atp_url}/accounts/{accountNumber}/orders', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'},params={'accountNumber': accountNumber} ,data=orderObject))
+            requests.post(f'{atp_url}/accounts/{accountNumber}/orders', headers={'Authorization': f'Bearer {tokens.accessToken}'},params={'accountNumber': accountNumber} ,data=orderObject))
 
     @staticmethod  # /accounts/{accountNumber}/orders/{orderId}
     def getOrder(orderId, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
-            requests.get(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId}))
+            requests.get(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId}))
 
     @staticmethod  # /accounts/{accountNumber}/orders/{orderId}
     def cancelOrder(orderId, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
-            requests.delete(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId}))
+            requests.delete(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId}))
 
     @staticmethod  # /accounts/{accountNumber}/orders/{orderId}
     def replaceOrder(orderId, orderObject, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
-            requests.put(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId}, data=orderObject))
+            requests.put(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId}, data=orderObject))
 
     @staticmethod  # /orders
     def getAllOrders(maxResults, fromEnteredTime, toEnteredTime, status=None):
         return _ResponseHandler(
-            requests.get(f'{atp_url}/orders', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status})))
+            requests.get(f'{atp_url}/orders', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status})))
 
     @staticmethod  # /accounts/{accountNumber}/previewOrder
     def previewOrder(orderObject, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
-            requests.post(f'{atp_url}/accounts/{accountNumber}/previewOrder', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, data=orderObject))
+            requests.post(f'{atp_url}/accounts/{accountNumber}/previewOrder', headers={'Authorization': f'Bearer {tokens.accessToken}'}, data=orderObject))
 
 
 class transactions:
     @staticmethod  # /accounts/{accountNumber}/transactions
     def transactions(startDate, endDate, types="TRADE", symbol=None, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
-            requests.get(f'{atp_url}/accounts/{accountNumber}/transactions', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'accountNumber': accountNumber, 'startDate': _TimeConvert(startDate), 'endDate': _TimeConvert(endDate), 'symbol': symbol, 'types': types})))
+            requests.get(f'{atp_url}/accounts/{accountNumber}/transactions', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'accountNumber': accountNumber, 'startDate': _TimeConvert(startDate), 'endDate': _TimeConvert(endDate), 'symbol': symbol, 'types': types})))
 
     @staticmethod  # /accounts/{accountNumber}/transactions/{transactionId}
     def details(transactionId, accountNumber=universe.credentials.encryptedId):
         return _ResponseHandler(
             requests.get(f'{atp_url}/accounts/{accountNumber}/transactions/{transactionId}',
-                         headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params={'accountNumber': accountNumber, 'transactionId': transactionId}))
+                         headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'transactionId': transactionId}))
 
 
 class userPreference:
     @staticmethod  # /userPreference
     def userPreference():
         return _ResponseHandler(
-            requests.get(f'{atp_url}/userPreference', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
+            requests.get(f'{atp_url}/userPreference', headers={'Authorization': f'Bearer {tokens.accessToken}'}))
 
 """
 Market Data
@@ -253,51 +266,51 @@ class quotes:
     @staticmethod  # /quotes
     def getList(symbols=None, fields=None, indicative=False):
         return _ResponseHandler(
-            requests.get(f'{mkt_url}/quotes', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'symbols': formatList(symbols), 'fields': fields, 'indicative': indicative})))
+            requests.get(f'{mkt_url}/quotes', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'symbols': formatList(symbols), 'fields': fields, 'indicative': indicative})))
 
     @staticmethod  # /{symbol_id}/quotes
     def getSingle(symbol_id, fields=None):
         return _ResponseHandler(
-            requests.get(f'{mkt_url}/{symbol_id}/quotes', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
+            requests.get(f'{mkt_url}/{symbol_id}/quotes', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'fields': fields})))
 
 
 class options:
     @staticmethod  # /chains
     def chains(symbol, contractType=None, strikeCount=None, includeUnderlyingQuotes=None, strategy=None, interval=None, strike=None, range=None, fromDate=None, toDate=None, volatility=None, underlyingPrice=None, interestRate=None, daysToExpiration=None, expMonth=None, optionType=None, entitlement=None):
         return _ResponseHandler(
-            requests.get(f'{mkt_url}/chains', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'contractType': contractType, 'strikeCount': strikeCount, 'includeUnderlyingQuotes': includeUnderlyingQuotes, 'strategy': strategy, 'interval': interval, 'strike': strike, 'range': range, 'fromDate': fromDate, 'toDate': toDate, 'volatility': volatility, 'underlyingPrice': underlyingPrice, 'interestRate': interestRate, 'daysToExpiration': daysToExpiration, 'expMonth': expMonth, 'optionType': optionType, 'entitlement': entitlement})))
+            requests.get(f'{mkt_url}/chains', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'contractType': contractType, 'strikeCount': strikeCount, 'includeUnderlyingQuotes': includeUnderlyingQuotes, 'strategy': strategy, 'interval': interval, 'strike': strike, 'range': range, 'fromDate': fromDate, 'toDate': toDate, 'volatility': volatility, 'underlyingPrice': underlyingPrice, 'interestRate': interestRate, 'daysToExpiration': daysToExpiration, 'expMonth': expMonth, 'optionType': optionType, 'entitlement': entitlement})))
 
     @staticmethod  # /expirationchain
     def expirationChain(symbol):
         return _ResponseHandler(
-            requests.get(f'{mkt_url}/expirationchain', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol})))
+            requests.get(f'{mkt_url}/expirationchain', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol})))
 
 class pricehistory:
     @staticmethod  # /pricehistory
     def getPriceHistory(symbol, periodType=None, period=None, frequencyType=None, frequency=None, startDate=None, endDate=None, needExtendedHoursData=None, needPreviousClose=None):
-        return _ResponseHandler(requests.get(f'{mkt_url}/pricehistory', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'periodType': periodType, 'period': period, 'frequencyType': frequencyType, 'frequency': frequency, 'startDate': _TimeConvert(startDate, 'epoch'), 'endDate': _TimeConvert(endDate, 'epoch'), 'needExtendedHoursData': needExtendedHoursData, 'needPreviousClose': needPreviousClose})))
+        return _ResponseHandler(requests.get(f'{mkt_url}/pricehistory', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'periodType': periodType, 'period': period, 'frequencyType': frequencyType, 'frequency': frequency, 'startDate': _TimeConvert(startDate, 'epoch'), 'endDate': _TimeConvert(endDate, 'epoch'), 'needExtendedHoursData': needExtendedHoursData, 'needPreviousClose': needPreviousClose})))
 
 
 class movers:
     @staticmethod  # /movers
     def getMovers(symbol, sort=None, frequency=None):
-        return _ResponseHandler(requests.get(f'{mkt_url}/movers', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'sort': sort, 'frequency': frequency})))
+        return _ResponseHandler(requests.get(f'{mkt_url}/movers', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'sort': sort, 'frequency': frequency})))
 
 
 class marketHours:
     @staticmethod  # /markets
     def getHours(symbol, date=None):
-        return _ResponseHandler(requests.get(f'{mkt_url}/markets', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'date': _TimeConvert(date, 'YYYY-MM-DD')})))
+        return _ResponseHandler(requests.get(f'{mkt_url}/markets', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'date': _TimeConvert(date, 'YYYY-MM-DD')})))
 
     @staticmethod  # /markets/{market_id}
     def byMarket(market_id, date=None):
-        return _ResponseHandler(requests.get(f'{mkt_url}/markets/{market_id}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params=_ParamsParser({'market_id': market_id, 'date': _TimeConvert(date, 'YYYY-MM-DD')})))
+        return _ResponseHandler(requests.get(f'{mkt_url}/markets/{market_id}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'market_id': market_id, 'date': _TimeConvert(date, 'YYYY-MM-DD')})))
 
 class instruments:
     @staticmethod  # /instruments
     def get(symbol, projection):
-        return _ResponseHandler(requests.get(f'{mkt_url}/instruments', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}, params={'symbol': symbol, 'projection': projection}))
+        return _ResponseHandler(requests.get(f'{mkt_url}/instruments', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'symbol': symbol, 'projection': projection}))
 
     @staticmethod  # /instruments/{cusip}
     def byCusip(cusip_id):
-        return _ResponseHandler(requests.get(f'{mkt_url}/instruments/{cusip_id}', headers={'Authorization': f'Bearer {universe.tokens.accessToken}'}))
+        return _ResponseHandler(requests.get(f'{mkt_url}/instruments/{cusip_id}', headers={'Authorization': f'Bearer {tokens.accessToken}'}))
