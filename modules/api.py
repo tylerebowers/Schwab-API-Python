@@ -168,7 +168,7 @@ def _ParamsParser(params):
 def _TimeConvert(dt=datetime.now(), form="8601"):
     if dt is None: return None
     elif dt is str: return dt
-    elif form == "8601": return dt.isoformat()
+    elif form == "8601": return dt.isoformat()[:-3]+'Z'
     elif form == "epoch": return int(dt.timestamp()*1000)
     elif form == "YYYY-MM-DD": return dt.strftime("%Y-%M-%d")
     else: return dt
