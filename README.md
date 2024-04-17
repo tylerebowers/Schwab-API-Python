@@ -7,7 +7,7 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 ## Quick setup
 1. Create a new Schwab individual developer app with callback url "https://127.0.0.1" and wait for approval.
 2. Python version 3.11 or higher is recommended.     
-3. `pip3 install requests websockets window-terminal`
+3. `pip3 install requests websockets`
 4. Paste keys in modules/universe.py specifically tokens.appKey and tokens.appSecret.
 5. Start by running the main.py file.
 

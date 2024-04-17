@@ -11,8 +11,8 @@ import websockets
 import websockets.exceptions
 from time import sleep
 from datetime import datetime, time
-from window_terminal import WindowTerminal
 from modules import universe, api
+
 
 class streamVars:
     webSocket = None
@@ -26,13 +26,12 @@ class streamVars:
 
 
 async def _Start():
-    streamVars.streamerInfo = api.userPreference.userPreference().get('streamerInfo', None)[0]
+    streamVars.streamerInfo = api.userPreference.userPreference().json().get('streamerInfo', None)[0]
     if streamVars.streamerInfo is None:
-        universe.terminal.error("could not get streamerInfo")
+        universe.cTerm.error("could not get streamerInfo")
         exit(1)
-    if streamVars.terminal is not None: streamVars.terminal.close()
-    streamVars.terminal = WindowTerminal.create_window()
-    streamVars.terminal.open()
+    if streamVars.terminal is None:
+        streamVars.terminal = universe.terminal(title="Stream output")
     streamVars.requestId = 0
     login = {
         "service": "ADMIN",
@@ -77,16 +76,16 @@ async def _Start():
                     #_streamResponseHandler(received)
         except Exception as e:
             streamVars.active = False
-            universe.terminal.error(f"{e}")
+            universe.cTerm.error(f"{e}")
             if e is websockets.exceptions.ConnectionClosedOK:
-                universe.terminal.info("Stream has closed.")
+                universe.cTerm.info("Stream has closed.")
                 break
             elif e is RuntimeError:
-                universe.terminal.warning("Streaming window has beeen closed.")
+                universe.cTerm.warning("Streaming window has beeen closed.")
                 break
             else:
                 if (datetime.now() - streamVars.startTimeStamp).seconds < 70:
-                    universe.terminal.error("Stream not alive for more than 1 minute, exiting...")
+                    universe.cTerm.error("Stream not alive for more than 1 minute, exiting...")
                     break
                 else:
                     streamVars.terminal.print("[WARNING]: Connection lost to server, reconnecting...")
@@ -115,13 +114,13 @@ def startAutomatic(streamAfterHours=False, streamPreHours=False):
             if _inHours() and not streamVars.active:
                 startManual()
             elif not _inHours() and streamVars.active:
-                universe.terminal.info("Stopping Stream.")
+                universe.cTerm.info("Stopping Stream.")
                 stop()
             sleep(60)
     threading.Thread(target=checker).start()
 
     if not start <= datetime.now().time() <= end:
-        universe.terminal.info("Stream was started outside of active hours and will launch when in hours.")
+        universe.cTerm.info("Stream was started outside of active hours and will launch when in hours.")
 
 
 def send(listOfRequests):
@@ -133,7 +132,7 @@ def send(listOfRequests):
         toSend = json.dumps({"requests": listOfRequests})
         asyncio.run(_send(toSend))
     else:
-        universe.terminal.warning("Stream is not active, nothing sent.")
+        universe.cTerm.warning("Stream is not active, nothing sent.")
 
 
 def stop():
@@ -218,9 +217,9 @@ class utilities:
                                                        "fields": utilities.listToString(fields)})
         else:
             if recordRequest:
-                universe.terminal.info("Request(s) saved to send on stream start.")
+                universe.cTerm.info("Request(s) saved to send on stream start.")
             else:
-                universe.terminal.info("Stream is not running and request was not saved.")
+                universe.cTerm.info("Stream is not running and request was not saved.")
 
     @staticmethod
     def basicRequest(**kwargs):
