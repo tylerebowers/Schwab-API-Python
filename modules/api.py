@@ -38,6 +38,16 @@ def initialize():
     # show user when tokens will expire & complete initialization
     universe.cTerm.warning(f"Access token expires in {tokens.accessTokenTimeout - (datetime.now() - tokens.accessTokenDateTime).seconds} seconds!")
     universe.cTerm.warning(f"Refresh token expires in {tokens.refreshTokenTimeout - (datetime.now() - tokens.refreshTokenDateTime).days} days!")
+
+    # get account numbers & hashes
+    universe.cTerm.info("Filling account number and account hash...")
+    resp = accounts.accountNumbers()
+    if resp.ok:
+        universe.credentials.accountNumber = resp.json()[0].get('accountNumber', None)
+        universe.credentials.accountHash = resp.json()[0].get('hashValue', None)
+    else:
+        universe.cTerm.error("Could not get account numbers and account hash.")
+    
     universe.cTerm.info("Initialization Complete")
 
 
@@ -150,7 +160,7 @@ def _ParamsParser(params):
     return params
 
 
-def _TimeConvert(dt=datetime.now(), form="8601"):
+def _TimeConvert(dt=None, form="8601"):
     if dt is None: return None
     elif dt is str: return dt
     elif form == "8601": return f'{dt.isoformat()[:-3]}Z'
@@ -179,50 +189,59 @@ class accounts:
     def getLinkedAccounts(fields=None):  # /accounts
         return requests.get(f'{atp_url}/accounts/', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'fields': fields}))
 
-    @staticmethod  # /accounts/{accountNumber}
-    def getAccount(fields=None, accountNumber=universe.credentials.encryptedId):
-        return requests.get(f'{atp_url}/accounts/{accountNumber}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'fields': fields}))
+    @staticmethod  # /accounts/{accountHash}
+    def getAccount(fields=None, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.get(f'{atp_url}/accounts/{accountHash}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'fields': fields}))
 
 
 class orders:
-    @staticmethod  # /accounts/{accountNumber}/orders
-    def getOrders(maxResults, fromEnteredTime, toEnteredTime, status=None, accountNumber=universe.credentials.encryptedId):
-        return requests.get(f'{atp_url}/accounts/{accountNumber}/orders', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'accountNumber': accountNumber, 'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status}))
+    @staticmethod  # /accounts/{accountHash}/orders
+    def getOrders(maxResults, fromEnteredTime, toEnteredTime, status=None, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.get(f'{atp_url}/accounts/{accountHash}/orders', headers={"Accept": "application/json", 'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status}))
 
-    @staticmethod  # /accounts/{accountNumber}/orders
-    def placeOrder(orderObject, accountNumber=universe.credentials.encryptedId):
-        return requests.post(f'{atp_url}/accounts/{accountNumber}/orders', headers={'Authorization': f'Bearer {tokens.accessToken}'},params={'accountNumber': accountNumber, "Content-Type": "application.json"} ,data=orderObject)
+    @staticmethod  # /accounts/{accountHash}/orders
+    def placeOrder(order, accountHash=None):
+        if accountHash is None: accountHash=universe.credentials.accountHash
+        return requests.post(f'{atp_url}/accounts/{accountHash}/orders', headers={"Accept": "application/json", 'Authorization': f'Bearer {tokens.accessToken}', "Content-Type": "application/json"}, json=order)
 
-    @staticmethod  # /accounts/{accountNumber}/orders/{orderId}
-    def getOrder(orderId, accountNumber=universe.credentials.encryptedId):
-        return requests.get(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId})
+    @staticmethod  # /accounts/{accountHash}/orders/{orderId}
+    def getOrder(orderId, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.get(f'{atp_url}/accounts/{accountHash}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'})
 
-    @staticmethod  # /accounts/{accountNumber}/orders/{orderId}
-    def cancelOrder(orderId, accountNumber=universe.credentials.encryptedId):
-        return requests.delete(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId})
+    @staticmethod  # /accounts/{accountHash}/orders/{orderId}
+    def cancelOrder(orderId, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.delete(f'{atp_url}/accounts/{accountHash}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'})
 
-    @staticmethod  # /accounts/{accountNumber}/orders/{orderId}
-    def replaceOrder(orderId, orderObject, accountNumber=universe.credentials.encryptedId):
-        return requests.put(f'{atp_url}/accounts/{accountNumber}/orders/{orderId}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'orderId': orderId}, data=orderObject)
+    @staticmethod  # /accounts/{accountHash}/orders/{orderId}
+    def replaceOrder(orderId, order, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.put(f'{atp_url}/accounts/{accountHash}/orders/{orderId}', headers={"Accept": "application/json", 'Authorization': f'Bearer {tokens.accessToken}', "Content-Type": "application/json"}, json=order)
 
     @staticmethod  # /orders
     def getAllOrders(maxResults, fromEnteredTime, toEnteredTime, status=None):
-        return requests.get(f'{atp_url}/orders', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status}))
+        return requests.get(f'{atp_url}/orders', headers={"Accept": "application/json", 'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'maxResults': maxResults, 'fromEnteredTime': _TimeConvert(fromEnteredTime), 'toEnteredTime': _TimeConvert(toEnteredTime), 'status': status}))
 
-    @staticmethod  # /accounts/{accountNumber}/previewOrder
-    def previewOrder(orderObject, accountNumber=universe.credentials.encryptedId):
-        return requests.post(f'{atp_url}/accounts/{accountNumber}/previewOrder', headers={'Authorization': f'Bearer {tokens.accessToken}', "Content-Type": "application.json"}, data=orderObject)
+    @staticmethod  # /accounts/{accountHash}/previewOrder
+    def previewOrder(orderObject, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.post(f'{atp_url}/accounts/{accountHash}/previewOrder', headers={'Authorization': f'Bearer {tokens.accessToken}', "Content-Type": "application.json"}, data=orderObject)
 
 
 class transactions:
-    @staticmethod  # /accounts/{accountNumber}/transactions
-    def transactions(startDate, endDate, types="TRADE", symbol=None, accountNumber=universe.credentials.encryptedId):
-        return requests.get(f'{atp_url}/accounts/{accountNumber}/transactions', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'accountNumber': accountNumber, 'startDate': _TimeConvert(startDate), 'endDate': _TimeConvert(endDate), 'symbol': symbol, 'types': types}))
+    @staticmethod  # /accounts/{accountHash}/transactions
+    def transactions(startDate, endDate, types="TRADE", symbol=None, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.get(f'{atp_url}/accounts/{accountHash}/transactions', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'accountNumber': accountHash, 'startDate': _TimeConvert(startDate), 'endDate': _TimeConvert(endDate), 'symbol': symbol, 'types': types}))
 
-    @staticmethod  # /accounts/{accountNumber}/transactions/{transactionId}
-    def details(transactionId, accountNumber=universe.credentials.encryptedId):
-        return requests.get(f'{atp_url}/accounts/{accountNumber}/transactions/{transactionId}',
-                         headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountNumber, 'transactionId': transactionId})
+    @staticmethod  # /accounts/{accountHash}/transactions/{transactionId}
+    def details(transactionId, accountHash=None):
+        if accountHash is None: accountHash = universe.credentials.accountHash
+        return requests.get(f'{atp_url}/accounts/{accountHash}/transactions/{transactionId}',
+                         headers={'Authorization': f'Bearer {tokens.accessToken}'}, params={'accountNumber': accountHash, 'transactionId': transactionId})
 
 
 class userPreference:
@@ -270,11 +289,11 @@ class movers:
 class marketHours:
     @staticmethod  # /markets
     def getHours(symbol, date=None):
-        return requests.get(f'{mkt_url}/markets', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'symbol': symbol, 'date': _TimeConvert(date, 'YYYY-MM-DD')}))
+        return requests.get(f'{mkt_url}/markets', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'markets': symbol, 'date': _TimeConvert(date, 'YYYY-MM-DD')}))
 
     @staticmethod  # /markets/{market_id}
     def byMarket(market_id, date=None):
-        return requests.get(f'{mkt_url}/markets/{market_id}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'market_id': market_id, 'date': _TimeConvert(date, 'YYYY-MM-DD')}))
+        return requests.get(f'{mkt_url}/markets/{market_id}', headers={'Authorization': f'Bearer {tokens.accessToken}'}, params=_ParamsParser({'date': _TimeConvert(date, 'YYYY-MM-DD')}))
 
 class instruments:
     @staticmethod  # /instruments

@@ -9,7 +9,6 @@ class credentials:
     appKey = "Your App Key"
     appSecret = "Your App Secret"
     callbackUrl = "https://127.0.0.1"
-    accountUsername = ""
     accountNumber = ""
     encryptedId = ""
 
