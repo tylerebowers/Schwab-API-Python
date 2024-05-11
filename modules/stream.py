@@ -11,7 +11,7 @@ import websockets
 import websockets.exceptions
 from time import sleep
 from datetime import datetime, time
-from modules import universe, api
+from modules import terminal, api
 
 
 class streamVars:
@@ -21,17 +21,18 @@ class streamVars:
     terminal = None
     active = False
     requestId = 0
-    streamURL = 'wss://streamer-api.schwab.com/ws'
     subscriptions = {}
 
 
 async def _Start():
-    streamVars.streamerInfo = api.userPreference.userPreference().json().get('streamerInfo', None)[0]
-    if streamVars.streamerInfo is None:
-        universe.cTerm.error("could not get streamerInfo")
+    response = api.userPreference.userPreference()
+    if response.ok:
+        streamVars.streamerInfo = response.json().get('streamerInfo', None)[0]
+    else:
+        terminal.colorPrint.error("Could not get streamerInfo")
         exit(1)
     if streamVars.terminal is None:
-        streamVars.terminal = universe.terminal(title="Stream output")
+        streamVars.terminal = terminal.multiTerminal(title="Stream output")
     streamVars.requestId = 0
     login = {
         "service": "ADMIN",
@@ -49,43 +50,30 @@ async def _Start():
     while True:
         try:
             streamVars.startTimeStamp = datetime.now()
-            async with websockets.connect(streamVars.streamerInfo.get('streamerSocketUrl'), ping_interval=None) as streamVars.webSocket:
+            async with websockets.connect(streamVars.streamerInfo.get('streamerSocketUrl'),
+                                          ping_interval=None) as streamVars.webSocket:
                 streamVars.terminal.print("[INFO]: Connecting to server...")
                 await streamVars.webSocket.send(json.dumps(login))
                 streamVars.terminal.print(f"[Login]: {await streamVars.webSocket.recv()}")
                 streamVars.active = True
-                """
-                for subType in streamVars.subscriptions:  # this resends what you have already sent (if the stream crashes).
-                    if len(streamVars.subscriptions[subType]["keys"]) and len(
-                            streamVars.subscriptions[subType]["fields"]):
-                        await streamVars.webSocket.send(json.dumps({"requests": [utilities.basicRequest(service=subType, command="SUBS",
-                                                                                      parameters={
-                                                                                          "keys": utilities.listToString(
-                                                                                              streamVars.subscriptions.get(
-                                                                                                  subType).get("keys")),
-                                                                                          "fields": utilities.listToString(
-                                                                                              streamVars.subscriptions.get(
-                                                                                                  subType).get(
-                                                                                                  "fields"))})]}))
-                        received = await streamVars.webSocket.recv()
-                        streamVars.terminal.print(received)
-                """
+                # TODO: resend requests if the stream crashes
                 while True:
                     received = await streamVars.webSocket.recv()
                     streamVars.terminal.print(received)
-                    #_streamResponseHandler(received)
+                    # TODO: make something that the user can work with
+                    # _streamResponseHandler(received)
         except Exception as e:
             streamVars.active = False
-            universe.cTerm.error(f"{e}")
+            terminal.colorPrint.error(f"{e}")
             if e is websockets.exceptions.ConnectionClosedOK:
-                universe.cTerm.info("Stream has closed.")
+                terminal.colorPrint.info("Stream has closed.")
                 break
             elif e is RuntimeError:
-                universe.cTerm.warning("Streaming window has beeen closed.")
+                terminal.colorPrint.warning("Streaming window has beeen closed.")
                 break
             else:
                 if (datetime.now() - streamVars.startTimeStamp).seconds < 70:
-                    universe.cTerm.error("Stream not alive for more than 1 minute, exiting...")
+                    terminal.colorPrint.error("Stream not alive for more than 1 minute, exiting...")
                     break
                 else:
                     streamVars.terminal.print("[WARNING]: Connection lost to server, reconnecting...")
@@ -95,13 +83,12 @@ def startManual():
     def start():
         asyncio.run(_Start())
 
-    thread = threading.Thread(target=start)
-    thread.start()
+    thread = threading.Thread(target=start).start()
 
 
 def startAutomatic(streamAfterHours=False, streamPreHours=False):
-    start = time(9, 30, 0)
-    end = time(16, 0, 0)
+    start = time(9, 30, 0)  # market opens at 9:30
+    end = time(16, 0, 0)  # market closes at 4:00
     if streamPreHours:
         start = time(8, 0, 0)
     if streamAfterHours:
@@ -110,37 +97,59 @@ def startAutomatic(streamAfterHours=False, streamPreHours=False):
     def checker():
         def _inHours():
             return (start <= datetime.now().time() <= end) and (0 <= datetime.now().weekday() <= 4)
+
         while True:
             if _inHours() and not streamVars.active:
                 startManual()
             elif not _inHours() and streamVars.active:
-                universe.cTerm.info("Stopping Stream.")
+                terminal.colorPrint.info("Stopping Stream.")
                 stop()
             sleep(60)
+
     threading.Thread(target=checker).start()
 
     if not start <= datetime.now().time() <= end:
-        universe.cTerm.info("Stream was started outside of active hours and will launch when in hours.")
+        terminal.colorPrint.info("Stream was started outside of active hours and will launch when in hours.")
 
 
 def send(listOfRequests):
     async def _send(toSend):
         await streamVars.webSocket.send(toSend)
+
     if type(listOfRequests) is not list:
         listOfRequests = [listOfRequests]
     if streamVars.active:
         toSend = json.dumps({"requests": listOfRequests})
         asyncio.run(_send(toSend))
     else:
-        universe.cTerm.warning("Stream is not active, nothing sent.")
+        terminal.colorPrint.warning("Stream is not active, nothing sent.")
 
 
 def stop():
     streamVars.requestId += 1
-    send({"service": "ADMIN", "requestid": streamVars.requestId, "command": "LOGOUT"})
+    send(utilities.basicRequest("ADMIN", "LOGOUT"))
     streamVars.active = False
 
+
 """
+{
+    "requests":
+    [
+        {
+            "service": "LEVELONE_FOREX",
+            "requestid": 1,
+            "command": "SUBS",
+            "SchwabClientCustomerId": "<streamerInfo[0].schwabClientCustomerId>",
+            "SchwabClientCorrelId": "<streamerInfo[0].schwabClientCorrelId>",
+            "parameters":
+            {
+                "keys": "EUR/USD",
+                "fields": "0,1,2,3,4,5,6,8,9,10,11,12,16,17,18,19,20,33,35,39,40,41,42"
+            }
+        }
+    ]
+}
+
 
 def _streamResponseHandler(streamOut):
     try:
@@ -174,64 +183,24 @@ def _streamResponseHandler(streamOut):
     except Exception as e:
         streamVars.terminal.print(f"[ERROR]: There was an error in decoding the stream response: {streamOut}")
         streamVars.terminal.print(f"[ERROR]: The error was: {e}")
+"""
+
 
 class utilities:
     @staticmethod
-    def request(command, service, keys, fields, recordRequest=True, addTickerToDB=True, accumulateSUBS=True):
-        command = command.upper()
-        service = service.upper()
-        if recordRequest:
-            if command == "SUBS":
-                if accumulateSUBS:
-                    streamVars.subscriptions[service]["keys"] = list(
-                        set(streamVars.subscriptions[service]["keys"] + keys))
-                    streamVars.subscriptions[service]["fields"] = list(
-                        set(streamVars.subscriptions[service]["fields"] + fields))
-                    keys = streamVars.subscriptions[service]["keys"]
-                    fields = streamVars.subscriptions[service]["fields"]
-                else:
-                    streamVars.subscriptions[service]["keys"] = keys
-                    streamVars.subscriptions[service]["fields"] = fields
-            elif command == "UNSUBS":
-                for key in keys:
-                    streamVars.subscriptions[service]["keys"].pop(key)
-            elif command == "ADD":
-                streamVars.subscriptions[service]["keys"] = list(
-                    set(streamVars.subscriptions[service]["keys"] + keys))
-                streamVars.subscriptions[service]["fields"] = list(
-                    set(streamVars.subscriptions[service]["fields"] + fields))
-        elif not recordRequest and accumulateSUBS and command == "SUBS":
-            keys = list(set(streamVars.subscriptions[service]["keys"] + keys))
-            fields = list(set(streamVars.subscriptions[service]["fields"] + fields))
-
-        if universe.preferences.usingDataframes and service in universe.dataframes:
-            for key in keys:
-                database.DFCreateTable(service.upper(), key, fields)
-
-        if universe.preferences.usingDatabase and addTickerToDB and service in universe.streamFieldAliases:
-            database.DBCreateTable(service.upper(), keys, fields)
-
-        if streamVars.active:
-            return utilities.basicRequest(service=service, command=command,
-                                           parameters={"keys": utilities.listToString(keys),
-                                                       "fields": utilities.listToString(fields)})
-        else:
-            if recordRequest:
-                universe.cTerm.info("Request(s) saved to send on stream start.")
-            else:
-                universe.cTerm.info("Stream is not running and request was not saved.")
-
-    @staticmethod
-    def basicRequest(**kwargs):
+    def basicRequest(service, command, parameters=None):
         streamVars.requestId += 1
-        args = ("service", "requestid", "command", "account", "source", "parameters")
-        request = {"requestid": streamVars.requestId,
-                   "account": streamVars.userPrincipals.get("accounts")[0].get("accountId"),
-                   "source": streamVars.connectionInfo.get("appId")}
-        for key, value in kwargs.items():
-            if key in args: request[key] = value
+        request = {"service": service.upper(),
+                   "command": command.upper(),
+                   "requestid": streamVars.requestId,
+                   "SchwabClientCustomerId": streamVars.streamerInfo.get("schwabClientCustomerId"),
+                   "SchwabClientCorrelId": streamVars.streamerInfo.get("schwabClientCorrelId")}
+        if parameters is not None: request["parameters"] = parameters
+        print(request)
         return request
 
+
+"""
     @staticmethod
     def listToString(ls):
         if type(ls) != list: ls = [ls]
@@ -242,19 +211,6 @@ class utilities:
         if type(ls) != list: ls = [ls]
         # if type(ls) != list: return ls.replace(" ", "").split(",")
         return ls
-
-    @staticmethod
-    def _ClearAllSubscriptions(confirm=False):
-        if confirm:
-            for subType in streamVars.subscriptions:
-                streamVars.subscriptions[subType]["keys"] = []
-                streamVars.subscriptions[subType]["fields"] = []
-
-    @staticmethod
-    def epochMSToDate(epochms):
-        return datetime.fromtimestamp(int(epochms) / 1000).strftime('%c')
-
-
 
 class account:
     @staticmethod
@@ -281,29 +237,6 @@ class actives:
 
 
 class admin:
-    @staticmethod
-    def login(qosLevel=2):
-        credentialsDictionary = {
-            "userid": streamVars.userPrincipals.get("accounts")[0].get("accountId"),
-            "token": streamVars.connectionInfo.get("token"),
-            "company": streamVars.userPrincipals.get("accounts")[0].get("company"),
-            "segment": streamVars.userPrincipals.get("accounts")[0].get("segment"),
-            "cddomain": streamVars.userPrincipals.get("accounts")[0].get("accountCdDomainId"),
-            "usergroup": streamVars.connectionInfo.get("userGroup"),
-            "accesslevel": streamVars.connectionInfo.get("accessLevel"),
-            "authorized": "Y",
-            "acl": streamVars.connectionInfo.get("acl"),
-            "timestamp": int(datetime.timestamp(
-                datetime.strptime(streamVars.connectionInfo.get('tokenTimestamp'),
-                                  "%Y-%m-%dT%H:%M:%S%z"))) * 1000,
-            "appid": streamVars.connectionInfo.get("appId")
-        }
-        parameters = {"credential": urllib.parse.urlencode(credentialsDictionary),
-                      "token": streamVars.connectionInfo.get("token"),
-                      "version": "1.0",
-                      "qoslevel": qosLevel
-                      }
-        return utilities.basicRequest(service="ADMIN", command="LOGIN", parameters=parameters)
 
     @staticmethod
     def logout():

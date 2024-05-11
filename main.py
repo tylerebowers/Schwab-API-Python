@@ -1,4 +1,4 @@
-from modules import api, universe, stream
+from modules import api, stream
 from datetime import datetime, timedelta
 
 
@@ -7,10 +7,10 @@ def main():
     print(api.accounts.accountNumbers().json())
 
     # get positions for linked accounts
-    print(api.accounts.getLinkedAccounts().json())
+    print(api.accounts.getAllAccounts().json())
 
     # get specific account positions
-    print(api.accounts.getAccount().json())
+    print(api.accounts.getAccount(fields="positions").json())
 
     # get up to 3000 orders for an account for the past week
     print(api.orders.getOrders(3000, datetime.now() - timedelta(days=7), datetime.now()).json())
@@ -42,7 +42,7 @@ def main():
     # api.orders.previewOrder(orderObject)
 
     # get all transactions for an account
-    print(api.transactions.transactions(datetime.now() - timedelta(days=7), datetime.now()).json())
+    print(api.transactions.transactions(datetime.now() - timedelta(days=7), datetime.now(), "TRADE").json())
 
     # get details for a specific transaction
     # print(api.transactions.details(transactionId).json())
@@ -63,28 +63,36 @@ def main():
     print(api.options.expirationChain("AAPL").json())
 
     # get price history for a symbol
-    # print(api.pricehistory.getPriceHistory("AAPL").json()) # there are a lot to print
+    # print(api.priceHistory.bySymbol("AAPL").json()) # there is a lot to print
 
     # get movers for an index
-    # print(api.movers.getMovers("$DJI"))
+    print(api.movers.getMovers("$DJI").json())
 
     # get marketHours for a symbol
-    print(api.marketHours.getHours("equity").json())
+    print(api.marketHours.byMarkets("equity,option").json())
 
     # get marketHours for a market
     print(api.marketHours.byMarket("equity").json())
 
     # get instruments for a symbol
-    print(api.instruments.get("AAPL", "search").json())
+    print(api.instruments.bySymbol("AAPL", "search").json())
 
     # get instruments for a cusip
     print(api.instruments.byCusip("037833100").json())  # 037833100 = AAPL
+
+    """
+    # send a subscription request to the stream (uncomment if you start the stream below)
+    stream.send(stream.utilities.basicRequest("CHART_EQUITY", "SUBS", parameters={"keys": "AMD,INTC", "fields": "0,1,2,3,4,5,6,7,8"}))
+    
+    # stop the stream after 30s
+    stream.stop()
+    """
 
 
 
 if __name__ == '__main__':
     print("Welcome to the unofficial Schwab api interface!\nGithub: https://github.com/tylerebowers/Schwab-API-Python")
     api.initialize()  # checks tokens & loads variables
-    api.updateTokensAutomatic() # starts thread to update tokens automatically
-    #stream.startManual() # start the stream manually
-    main() #call the user code above
+    api.updateTokensAutomatic()  # starts thread to update tokens automatically
+    #stream.startManual()  # start the stream manually
+    main()  # call the user code above

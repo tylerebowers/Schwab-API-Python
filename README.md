@@ -6,20 +6,21 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 ## Quick setup
 1. Create a new Schwab individual developer app with callback url "https://127.0.0.1" and wait until the status is "Ready for use", note that "Approved - Pending" will not work.
-2. Python version 3.11 or higher is recommended.     
-3. `pip3 install requests websockets`
-4. Paste keys in modules/universe.py specifically tokens.appKey and tokens.appSecret.
-5. Start by running the main.py file.
+2. Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
+3. Python version 3.11 or higher is required.     
+4. `pip3 install requests websockets python-dotenv`
+5. Paste keys in the `.env` file specifically tokens.appKey and tokens.appSecret.
+6. Start by running the main.py file.
 
 ## What can this program do?
- - Authenticate and access the api (api.initialize())
- - Functions for all api functions (examples in main.py)
- - Auto "access token" updates (api.updateTokensAutomatic())
- - Stream real-time data (stream.startManual())
- - Automatically start/stop stream (stream.startAutomatic())
+ - Authenticate and access the api (`api.initialize()`)
+ - Functions for all api functions (examples in `main.py`)
+ - Auto "access token" updates (`api.updateTokensAutomatic()`)
+ - Stream real-time data (`stream.startManual()`)
+ - Automatically start/stop stream (`stream.startAutomatic()`)
  ### TBD 
- - Automatic refresh token updates. (not started)
- - Customizable stream response handler (20% complete)
+ - Automatic refresh token updates. (Waiting for Schwab implementation)
+ - Customizable stream response handler. (Waiting for Schwab implementation)
 
 
 ## Usage and Design
@@ -29,11 +30,15 @@ Below is a light documentation on how it works, python is pseudocode-esk so if y
 
 ### Organization
 
+The root of the wrapper:
+ - `main.py` where the main program is run from, contains examples for you to get started with.
+ - `.env` contains the app key and app secret, these need to be filled in.
+ - `tokens.json` contains api tokens as well as dates for when they expire.
+
 The modules folder contains code for main operations:     
- - `api.py` contains functions relating to api calls, requests, and automatic token checker daemons.
- - `tokens.txt` contains api tokens as well as dates for when they expire.
- - `universe.py` contains universal variables that need to be accessed across many functions such as credentials, preferences, tokens, etc.
+ - `api.py` contains functions relating to api calls, requests, and automatic token checker threads.
  - `stream.py` contains functions for streaming data from websockets.
+ - `terminal.py` contains a program for making additional terminal windows and printing to the terminal with color.
 
 <!---
 ### Initialization

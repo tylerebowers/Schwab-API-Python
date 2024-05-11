@@ -1,34 +1,20 @@
 """
-This file stores variables to be used between python files and functions some
+This file is used to print colored text and create multiple terminals
 Github: https://github.com/tylerebowers/Schwab-API-Python
 """
 
 
-class credentials:
-    # Schwab account credentials
-    appKey = "Your App Key"
-    appSecret = "Your App Secret"
-    callbackUrl = "https://127.0.0.1"
-    accountNumber = ""
-    encryptedId = ""
-
-
-"""
-Below here are variables for functionality of the program; they shouldn't be changed
-"""
-
-
-class cTerm:
+class colorPrint:
     @staticmethod
-    def info(string): print(f"\033[92m{'[INFO]: '}\033[00m{string}")
+    def info(string, end="\n"): print(f"\033[92m{'[INFO]: '}\033[00m{string}", end=end)
     @staticmethod
-    def warning(string): print(f"\033[93m{'[WARN]: '}\033[00m{string}")
+    def warning(string, end="\n"): print(f"\033[93m{'[WARN]: '}\033[00m{string}", end=end)
     @staticmethod
-    def error(string): print(f"\033[91m{'[ERROR]: '}\033[00m{string}")
+    def error(string, end="\n"): print(f"\033[91m{'[ERROR]: '}\033[00m{string}", end=end)
     @staticmethod
     def input(string): return input(f"\033[94m{'[INPUT]: '}\033[00m{string}")
     @staticmethod
-    def user(string): print(f"\033[1;31m{'[USER]: '}\033[00m{string}")
+    def user(string, end="\n"): print(f"\033[1;31m{'[USER]: '}\033[00m{string}", end=end)
 
 
 from time import sleep
@@ -37,7 +23,7 @@ from tkinter import ttk
 import threading
 
 
-class terminal(threading.Thread):
+class multiTerminal(threading.Thread):
 
     def __init__(self, title="Terminal", height=20, width=200, font=("Courier New", "12"), backgroundColor="gray5", textColor="snow", allowClosing=True, ignoreClosedPrints=True):
         #params
