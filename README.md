@@ -9,7 +9,7 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 2. Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
 3. Python version 3.11 or higher is required.     
 4. `pip3 install requests websockets python-dotenv`
-5. Paste keys in the `.env` file specifically tokens.appKey and tokens.appSecret.
+5. Paste keys in the `.env` file specifically appKey and appSecret.
 6. Start by running the main.py file.
 
 ## What can this program do?
