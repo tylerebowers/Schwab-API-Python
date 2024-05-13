@@ -5,7 +5,7 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 
 
 ## Quick setup
-1. Create a new Schwab individual developer app with callback url "https://127.0.0.1" and wait until the status is "Ready for use", note that "Approved - Pending" will not work.
+1. Create a new Schwab individual developer app with callback url "https://127.0.0.1" (case sensitive) and wait until the status is "Ready for use", note that "Approved - Pending" will not work.
 2. Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
 3. Python version 3.11 or higher is required.     
 4. `pip3 install requests websockets python-dotenv`
