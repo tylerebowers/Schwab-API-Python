@@ -57,17 +57,26 @@ def initialize():
     terminal.colorPrint.info("Filling account number and account hash -> ", end="")
     resp = accounts.accountNumbers()
     if resp.ok:
-        print("Done")
-        credentials.accountNumber = resp.json()[0].get('accountNumber', None)
-        credentials.accountHash = resp.json()[0].get('hashValue', None)
-    else:
-        print("Error")
+        d = resp.json()
+        if len(d) == 1:  # only one account
+            credentials.accountNumber = d[0].get('accountNumber', None)
+            credentials.accountHash = d[0].get('hashValue', None)
+            print("Done.")
+        else:  # multiple accounts, we must choose one to place orders
+            print("Input required.")
+            terminal.colorPrint.user("Multiple accounts found, you need to choose the one to place orders with.")
+            terminal.colorPrint.user("Options: [" + ", ".join([f"{i + 1}={d[i].get('accountNumber', 'N/A')}" for i in range(len(d))]) + "]")
+            sel = int(terminal.colorPrint.input(f"Select one by number ({', '.join([str(i + 1) for i in range(len(d))])}): ")) - 1
+            credentials.accountNumber = d[sel].get('accountNumber', None)
+            credentials.accountHash = d[sel].get('hashValue', None)
+    else:  # app might not be "Ready For Use"
+        print("Error.")
         terminal.colorPrint.error("Could not get account numbers and account hash.")
         terminal.colorPrint.error(
             "Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
         terminal.colorPrint.error(resp.json())
     resp.close()
-    
+
     terminal.colorPrint.info("Initialization Complete")
 
 
@@ -180,8 +189,8 @@ def _PostAccessTokenAutomated(grant_type, code):
         'Content-Type': 'application/x-www-form-urlencoded'}
     if grant_type == 'authorization_code':
         data = {'grant_type': 'authorization_code', 'code': code,
-                'redirect_uri': credentials.callbackUrl, 
-                'client_id': credentials.appKey}  # gets access and refresh tokens using authorization code
+                'redirect_uri': credentials.callbackUrl,
+                'client_id': credentials.appKey}
     elif grant_type == 'refresh_token':
         data = {'grant_type': 'refresh_token', 'refresh_token': code}  # refreshes the access token
     else:

@@ -12,9 +12,9 @@ class colorPrint:
     @staticmethod
     def error(string, end="\n"): print(f"\033[91m{'[ERROR]: '}\033[00m{string}", end=end)
     @staticmethod
-    def input(string): return input(f"\033[94m{'[INPUT]: '}\033[00m{string}")
+    def user(string, end="\n"): print(f"\033[94m{'[USER]: '}\033[00m{string}", end=end)
     @staticmethod
-    def user(string, end="\n"): print(f"\033[1;31m{'[USER]: '}\033[00m{string}", end=end)
+    def input(string): return input(f"\033[94m{'[INPUT]: '}\033[00m{string}")
 
 
 from time import sleep
