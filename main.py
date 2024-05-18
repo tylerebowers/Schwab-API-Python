@@ -84,7 +84,7 @@ def main():
     # send a subscription request to the stream (uncomment if you start the stream below)
     stream.send(stream.utilities.basicRequest("CHART_EQUITY", "SUBS", parameters={"keys": "AMD,INTC", "fields": "0,1,2,3,4,5,6,7,8"}))
     
-    # stop the stream after 30s
+    # stop the stream
     stream.stop()
     """
 

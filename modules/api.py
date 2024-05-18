@@ -66,7 +66,8 @@ def initialize():
         terminal.colorPrint.error(
             "Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
         terminal.colorPrint.error(resp.json())
-
+    resp.close()
+    
     terminal.colorPrint.info("Initialization Complete")
 
 
