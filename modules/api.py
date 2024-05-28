@@ -121,12 +121,14 @@ def _AccessTokenUpdate():
 def _RefreshTokenUpdate():
     import webbrowser
     # get authorization code (requires user to authorize)
-    terminal.colorPrint.user("Please authorize this program to access your schwab account.")
-    authUrl = f'https://api.schwabapi.com/v1/oauth/authorize?client_id={credentials.appKey}&redirect_uri={credentials.callbackUrl}'
-    terminal.colorPrint.user(f"Click to authenticate: {authUrl}")
-    terminal.colorPrint.info("Opening browser...")
-    webbrowser.open(authUrl)
-    responseURL = terminal.colorPrint.input("After authorizing, wait for it to load (<1min) and paste the WHOLE url here: ")
+    terminal.colorPrint.user("Authorizing this program to access your schwab account.")
+    appKey = credentials.appKey
+    callBack = credentials.callbackUrl
+    authUrl = f'https://api.schwabapi.com/v1/oauth/authorize?client_id={appKey}&redirect_uri={callBack}'
+
+    # Run the async function
+    responseURL = asyncio.run(capture_oauth_redirect_url(authUrl, callBack))
+
     code = f"{responseURL[responseURL.index('code=') + 5:responseURL.index('%40')]}@"  # session = responseURL[responseURL.index("session=")+8:]
     # get new access and refresh tokens
     response = _PostAccessTokenAutomated('authorization_code', code)
