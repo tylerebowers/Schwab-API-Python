@@ -4,6 +4,9 @@ Coded by Tyler Bowers
 Github: https://github.com/tylerebowers/Schwab-API-Python
 """
 
+import asyncio
+from playwright.async_api import async_playwright
+
 import json
 import requests
 import threading
@@ -30,6 +33,30 @@ class credentials:
     accountHash = None
     accountNumber = None
 
+async def capture_oauth_redirect_url(auth_url, redirect_uri):
+    async with async_playwright() as p:
+        # Launch a browser
+        browser = await p.firefox.launch(headless=False)  # Set headless=True if you don't need a UI
+        context = await browser.new_context()
+
+        # Open a new page
+        page = await context.new_page()
+
+        # Navigate to the authorization URL
+        await page.goto(auth_url)
+
+        # Define a function to check if the current URL matches the redirect URI
+        def check_redirect_url():
+            current_url = page.url
+            return current_url.startswith(redirect_uri)
+
+        # Continuously check the URL until it matches the redirect URI or a timeout occurs
+        while not check_redirect_url():
+            await asyncio.sleep(1)  # Adjust the sleep interval as needed
+
+        # Close the browser
+        await browser.close()
+        return page.url
 
 def initialize():
     # load credentials
@@ -119,7 +146,6 @@ def _AccessTokenUpdate():
 
 
 def _RefreshTokenUpdate():
-    import webbrowser
     # get authorization code (requires user to authorize)
     terminal.colorPrint.user("Authorizing this program to access your schwab account.")
     appKey = credentials.appKey
