@@ -189,8 +189,7 @@ def _PostAccessTokenAutomated(grant_type, code):
         'Content-Type': 'application/x-www-form-urlencoded'}
     if grant_type == 'authorization_code':
         data = {'grant_type': 'authorization_code', 'code': code,
-                'redirect_uri': credentials.callbackUrl,
-                'client_id': credentials.appKey}
+                'redirect_uri': credentials.callbackUrl}
     elif grant_type == 'refresh_token':
         data = {'grant_type': 'refresh_token', 'refresh_token': code}  # refreshes the access token
     else:
