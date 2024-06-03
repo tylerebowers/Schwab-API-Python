@@ -350,8 +350,8 @@ class Client:
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'symbol': symbol, 'periodType': periodType, 'period': period,
                                                         'frequencyType': frequencyType, 'frequency': frequency,
-                                                        'startDate': self._time_convert(startDate, 'epoch'),
-                                                        'endDate': self._time_convert(endDate, 'epoch'),
+                                                        'startDate': self._time_convert(startDate, 'epoch_ms'),
+                                                        'endDate': self._time_convert(endDate, 'epoch_ms'),
                                                         'needExtendedHoursData': needExtendedHoursData,
                                                         'needPreviousClose': needPreviousClose}),
                             timeout=2)
