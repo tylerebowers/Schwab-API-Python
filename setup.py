@@ -6,7 +6,7 @@ with open('README.md', 'r') as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
-    name='schwab-dev',
+    name='schwabdev',
     version=VERSION,
     author='Tyler Bowers',
     author_email='tylerebowers@gmail.com',

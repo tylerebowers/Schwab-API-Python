@@ -1,7 +1,8 @@
 # Schwab-API-Python 
 This is an unofficial python program to access the Schwab api.    
-You will need a Schwab developer account [here](https://beta-developer.schwab.com/).        
-Join the [Discord group](https://discord.gg/m7SSjr9rs9)
+You will need a Schwab developer account [here](https://beta-developer.schwab.com/).  
+Join the [Discord](https://discord.gg/m7SSjr9rs9).  
+Also found on [PyPI](https://pypi.org/project/schwabdev/), install via pip3 install schwabdev 
 
 
 ## Quick setup
@@ -11,7 +12,7 @@ Join the [Discord group](https://discord.gg/m7SSjr9rs9)
 4. `pip3 install schwabdev requests websockets tk` (tkinter/tk may need to be installed differently)
 5. Import the package `import schwabdev`
 6. Create a client `client = schwabdev.Client('Your app key', 'Your app secret')`
-7. 
+7. Examples on how to use the client are in `tests/api_demo.py`
 
 ## What can this program do?
  - Authenticate and access the api 
