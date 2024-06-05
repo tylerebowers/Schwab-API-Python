@@ -10,21 +10,30 @@ setup(
     version=VERSION,
     author='Tyler Bowers',
     author_email='tylerebowers@gmail.com',
+    license='MIT',
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     packages=find_packages(),
+    python_requires='>=3.11',
     install_requires=[
         'requests',
         'websockets',
         'tk'
     ],
-    keywords=['python', 'schwab', 'api', 'client', 'finance', 'trading', 'stocks', 'options', 'forex', 'futures'],
+    keywords=['python', 'schwab', 'api', 'client', 'finance', 'trading', 'stocks', 'equities', 'options', 'forex', 'futures'],
     classifiers=[
-        'Intended Audience :: Developers',
+        'Topic :: Office/Business :: Financial :: Investment',
+        'Development Status :: 4 - Beta',
+        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
-        'Operating System :: POSIX :: Linux',
-        'Operating System :: MacOS :: MacOS X',
-        'Operating System :: Microsoft :: Windows',
-    ]
+        'Operating System :: OS Independent',
+        'Intended Audience :: Developers',
+        'Natural Language :: English',
+    ],
+    project_urls={
+        'Source': 'https://github.com/tylerebowers/Schwab-API-Python',
+        'Youtube': 'https://www.youtube.com/playlist?list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8',
+        'PyPI': 'https://pypi.org/project/schwabdev/'
+    }
 )

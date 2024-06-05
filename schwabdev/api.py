@@ -112,7 +112,7 @@ class Client:
         terminal.color_print.user("Please authorize this program to access your schwab account.")
         auth_url = f'https://api.schwabapi.com/v1/oauth/authorize?client_id={self._app_key}&redirect_uri={self._callback_url}'
         terminal.color_print.user(f"Click to authenticate: {auth_url}")
-        terminal.color_print.user("Opening browser..")
+        terminal.color_print.user("Opening browser...")
         webbrowser.open(auth_url)
         response_url = terminal.color_print.input(
             "After authorizing, wait for it to load (<1min) and paste the WHOLE url here: ")
@@ -168,11 +168,13 @@ class Client:
             terminal.color_print.error(e)
             return None, None, None
 
+    # params_parser removed None (null) values
     def _params_parser(self, params):
         for key in list(params.keys()):
             if params[key] is None: del params[key]
         return params
 
+    # convert time to the correct format, passthrough if a string, preserve None if None for params parser
     def _time_convert(self, dt=None, form="8601"):
         if dt is None:
             return None
@@ -290,6 +292,11 @@ class Client:
 
     # get transaction details using transaction id (uses default account)
     def transaction_details(self, accountHash, transactionId):
+        """
+        :param accountHash:
+        :param transactionId:
+        :return:
+        """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions/{transactionId}',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params={'accountNumber': accountHash, 'transactionId': transactionId},
@@ -321,15 +328,14 @@ class Client:
                             timeout=2)
 
     # get option chains for a ticker
-    def option_chains(self, symbol, contractType=None, strikeCount=None, includeUnderlyingQuotes=None, strategy=None,
-               interval=None,
-               strike=None, range=None, fromDate=None, toDate=None, volatility=None, underlyingPrice=None,
+    def option_chains(self, symbol, contractType=None, strikeCount=None, includeUnderlyingQuote=None, strategy=None,
+               interval=None, strike=None, range=None, fromDate=None, toDate=None, volatility=None, underlyingPrice=None,
                interestRate=None, daysToExpiration=None, expMonth=None, optionType=None, entitlement=None):
         return requests.get(f'{self._base_api_url}/marketdata/v1/chains',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser(
                                 {'symbol': symbol, 'contractType': contractType, 'strikeCount': strikeCount,
-                                 'includeUnderlyingQuotes': includeUnderlyingQuotes, 'strategy': strategy,
+                                 'includeUnderlyingQuote': includeUnderlyingQuote, 'strategy': strategy,
                                  'interval': interval, 'strike': strike, 'range': range, 'fromDate': fromDate,
                                  'toDate': toDate, 'volatility': volatility, 'underlyingPrice': underlyingPrice,
                                  'interestRate': interestRate, 'daysToExpiration': daysToExpiration,
