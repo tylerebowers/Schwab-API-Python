@@ -12,7 +12,7 @@ Also found on [PyPI](https://pypi.org/project/schwabdev/), install via `pip3 ins
 4. `pip3 install schwabdev requests websockets tk` (tkinter/tk may need to be installed differently)
 5. Import the package `import schwabdev`
 6. Create a client `client = schwabdev.Client('Your app key', 'Your app secret')`
-7. Examples on how to use the client are in `tests/api_demo.py`
+7. Examples on how to use the client are in `tests/api_demo.py` and `tests/stream_demo.py`
 
 ## What can this program do?
  - Authenticate and access the api 

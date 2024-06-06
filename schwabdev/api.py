@@ -10,7 +10,7 @@ from schwabdev import terminal
 
 class Client:
 
-    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json"):
+    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", show_linked=True):
         if app_key is None or app_secret is None or callback_url is None or tokens_file is None:
             raise Exception("app_key, app_secret, callback_url, and tokens_file cannot be None.")
         elif len(app_key) != 32 or len(app_secret) != 16:
@@ -52,15 +52,16 @@ class Client:
             self._update_refresh_token()
 
         # get account numbers & hashes, this doubles as a checker to make sure that the appKey and appSecret are valid and that the app is ready for use
-        resp = self.account_linked()
-        if resp.ok:
-            d = resp.json()
-            terminal.color_print.info(f"Linked Accounts: {d}")
-        else:  # app might not be "Ready For Use"
-            terminal.color_print.error("Could not get linked accounts.")
-            terminal.color_print.error("Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
-            terminal.color_print.error(resp.json())
-        resp.close()
+        if show_linked:
+            resp = self.account_linked()
+            if resp.ok:
+                d = resp.json()
+                terminal.color_print.info(f"Linked Accounts: {d}")
+            else:  # app might not be "Ready For Use"
+                terminal.color_print.error("Could not get linked accounts.")
+                terminal.color_print.error("Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
+                terminal.color_print.error(resp.json())
+            resp.close()
 
         terminal.color_print.info("Initialization Complete")
 
@@ -90,20 +91,22 @@ class Client:
         # get the token dictionary (we will need to rewrite the file)
         access_token_time_old, refresh_token_issued, token_dictionary_old = self._read_tokens_file()
         # get new tokens
-        response = self._post_oauth_token('refresh_token', token_dictionary_old.get("refresh_token"))
-        if response.ok:
-            # get and update to the new access token
-            self._access_token_issued = datetime.now()
-            self._refresh_token_issued = refresh_token_issued
-            new_td = response.json()
-            self.access_token = new_td.get("access_token")
-            self.refresh_token = new_td.get("refresh_token")
-            self.id_token = new_td.get("id_token")
-            self._write_tokens_file(self._access_token_issued, refresh_token_issued, new_td)
-            # show user that we have updated the access token
-            terminal.color_print.info(f"Access token updated: {self._access_token_issued}")
-        else:
-            terminal.color_print.error("Could not get new access token.")
+        for i in range(3):
+            response = self._post_oauth_token('refresh_token', token_dictionary_old.get("refresh_token"))
+            if response.ok:
+                # get and update to the new access token
+                self._access_token_issued = datetime.now()
+                self._refresh_token_issued = refresh_token_issued
+                new_td = response.json()
+                self.access_token = new_td.get("access_token")
+                self.refresh_token = new_td.get("refresh_token")
+                self.id_token = new_td.get("id_token")
+                self._write_tokens_file(self._access_token_issued, refresh_token_issued, new_td)
+                # show user that we have updated the access token
+                terminal.color_print.info(f"Access token updated: {self._access_token_issued}")
+                break
+            else:
+                terminal.color_print.error(f"Could not get new access token ({i+1} of 3).")
 
     # get new access and refresh tokens using authorization code.
     def _update_refresh_token(self):

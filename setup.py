@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.0.1'
+VERSION = '1.5.0'
 DESCRIPTION = 'Schwab API Python Client (unofficial)'
 with open('README.md', 'r') as f:
     LONG_DESCRIPTION = f.read()

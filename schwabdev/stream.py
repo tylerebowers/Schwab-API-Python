@@ -81,8 +81,6 @@ class Stream:
             asyncio.run(self._start_streamer(receiver))
 
         threading.Thread(target=_start_async).start()
-        sleep(4)  # wait for thread/stream to start
-
 
     def start_automatic(self, after_hours=False, pre_hours=False):
         start = time(9, 30, 0)  # market opens at 9:30
@@ -151,154 +149,43 @@ class Stream:
         if type(ls) is str: return ls
         elif type(ls) is list: return ",".join(map(str, ls))
 
+    default_command = "ADD"
 
-    # requests that can be sent to the stream
-    def chart_equity(self, keys, fields, command="SUBS"):
-        return self.basic_request("CHART_EQUITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
+    def level_one_equities(self, keys, fields, command=default_command):  # Service not available or temporary down.
+        return self.basic_request("LEVELONE_EQUITIES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def chart_futures(self, keys, fields, command="SUBS"):
-        return self.basic_request("CHART_FUTURES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
+    def level_one_options(self, keys, fields, command=default_command):
+        return self.basic_request("LEVELONE_OPTIONS", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_quote(self, keys, fields, command="SUBS"):  # Service not available or temporary down.
-        return self.basic_request("QUOTE", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
-
-    def level_one_option(self, keys, fields, command="SUBS"):
-        return self.basic_request("OPTION", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
-
-    def level_one_futures(self, keys, fields, command="SUBS"):
+    def level_one_futures(self, keys, fields, command=default_command):
         return self.basic_request("LEVELONE_FUTURES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_forex(self, keys, fields, command="SUBS"):
-        return self.basic_request("LEVELONE_FOREX", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
-
-    def level_one_futures_options(self, keys, fields, command="SUBS"):
+    def level_one_futures_options(self, keys, fields, command=default_command):
         return self.basic_request("LEVELONE_FUTURES_OPTIONS", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
+    def level_one_forex(self, keys, fields, command=default_command):
+        return self.basic_request("LEVELONE_FOREX", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    """
-    
-    class account:
-        @staticmethod
-        def activity(keys, fields, command="SUBS"):
-            return Stream.request(command, "ACCT_ACTIVITY", keys, fields)
-    
-    
-    class actives:
-        @staticmethod
-        def nasdaq(keys, fields, command="SUBS"):
-            return Stream.request(command, "ACTIVES_NASDAQ", keys, fields)
-    
-        @staticmethod
-        def nyse(keys, fields, command="SUBS"):
-            return Stream.request(command, "ACTIVES_NYSE", keys, fields)
-    
-        @staticmethod
-        def otcbb(keys, fields, command="SUBS"):
-            return Stream.request(command, "ACTIVES_OTCBB", keys, fields)
-    
-        @staticmethod
-        def options(keys, fields, command="SUBS"):
-            return Stream.request(command, "ACTIVES_OPTIONS", keys, fields)
-    
-    
-    
-    class book:
-        @staticmethod
-        def forex(keys, fields, command="SUBS"):
-            return Stream.request(command, "FOREX_BOOK", keys, fields)
-    
-        @staticmethod
-        def futures(keys, fields, command="SUBS"):
-            return Stream.request(command, "FUTURES_BOOK", keys, fields)
-    
-        @staticmethod
-        def listed(keys, fields, command="SUBS"):
-            return Stream.request(command, "LISTED_BOOK", keys, fields)
-    
-        @staticmethod
-        def nasdaq(keys, fields, command="SUBS"):
-            return Stream.request(command, "NASDAQ_BOOK", keys, fields)
-    
-        @staticmethod
-        def options(keys, fields, command="SUBS"):
-            return Stream.request(command, "OPTIONS_BOOK", keys, fields)
-    
-        @staticmethod
-        def futures_options(keys, fields, command="SUBS"):
-            return Stream.request(command, "FUTURES_OPTIONS_BOOK", keys, fields)
-    
-    
-    class levelTwo:
-        @staticmethod
-        def _NA():
-            print("Not Available")
-    
-    
-    class news:
-        @staticmethod
-        def headline(keys, fields, command="SUBS"):
-            return Stream.request(command, "NEWS_HEADLINE", keys, fields)
-    
-        @staticmethod
-        def headlineList(keys, fields, command="SUBS"):
-            return Stream.request(command, "NEWS_HEADLINELIST", keys, fields)
-    
-        @staticmethod
-        def headlineStory(keys, fields, command="SUBS"):
-            return Stream.request(command, "NEWS_STORY", keys, fields)
-    
-    
-    class timeSale:
-        @staticmethod
-        def equity(keys, fields, command="SUBS"):
-            return Stream.request(command, "TIMESALE_EQUITY", keys, fields)
-    
-        @staticmethod
-        def forex(keys, fields, command="SUBS"):
-            return Stream.request(command, "TIMESALE_FOREX", keys, fields)
-    
-        @staticmethod
-        def futures(keys, fields, command="SUBS"):
-            return Stream.request(command, "TIMESALE_FUTURES", keys, fields)
-    
-        @staticmethod
-        def options(keys, fields, command="SUBS"):
-            return Stream.request(command, "TIMESALE_OPTIONS", keys, fields)
-            
-    """
+    def nyse_book(self, keys, fields, command=default_command):
+        return self.basic_request("NYSE_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-"""
+    def nasdaq_book(self, keys, fields, command=default_command):
+        return self.basic_request("NASDAQ_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-def _streamResponseHandler(streamOut):
-    try:
-        parentDict = json.loads(streamOut)
-        for key in parentDict.keys():
-            match key:
-                case "notify":
-                    self._terminal.print(
-                        f"[Heartbeat]: {Stream.epochMSToDate(parentDict['notify'][0]['heartbeat'])}")
-                case "response":
-                    for resp in parentDict.get('response'):
-                        self._terminal.print(f"[Response]: {resp}")
-                case "snapshot":
-                    for snap in parentDict.get('snapshot'):
-                        self._terminal.print(f"[Snapshot]: {snap}")
-                case "data":
-                    for data in parentDict.get("data"):
-                        if data.get('service').upper() in universe.streamFieldAliases:
-                            service = data.get("service")
-                            timestamp = data.get("timestamp")
-                            for symbolData in data.get("content"):
-                                tempSnapshot = database.Snapshot(service, symbolData.get("key"), timestamp, symbolData)
-                                if universe.preferences.usingDatabase:
-                                    database.DBAddSnapshot(tempSnapshot)  # add to database
-                                if universe.preferences.usingDataframes:
-                                    database.DFAddSnapshot(tempSnapshot)  # add to dataframes
-                                self._terminal.print(
-                                    f"[Data]: {tempSnapshot.toPrettyString()}")  # to stream output
-                case _:
-                    self._terminal.print(f"[Unknown Response]: {streamOut}")
-    except Exception as e:
-        self._terminal.print(f"[ERROR]: There was an error in decoding the stream response: {streamOut}")
-        self._terminal.print(f"[ERROR]: The error was: {e}")
-"""
+    def options_book(self, keys, fields, command=default_command):
+        return self.basic_request("OPTIONS_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
+
+    def chart_equity(self, keys, fields, command=default_command):
+        return self.basic_request("CHART_EQUITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
+
+    def chart_futures(self, keys, fields, command=default_command):
+        return self.basic_request("CHART_FUTURES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
+
+    def screener_equity(self, keys, fields, command=default_command):
+        return self.basic_request("SCREENER_EQUITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
+
+    def screener_option(self, keys, fields, command=default_command):
+        return self.basic_request("SCREENER_OPTION", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
+
+    def account_activity(self, keys, fields, command=default_command):
+        return self.basic_request("ACCT_ACTIVITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
