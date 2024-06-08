@@ -59,10 +59,9 @@ def main():
 
     # client.stream.send(client.stream.account_activity("Account Activity", "0,1,2,3"))
 
-    # client.stream.stop() # this will stop the stream but it is a bit "hacky"
-
+    # stop the stream after 60 seconds (since this is a demo
     import time
-    time.sleep(50)
+    time.sleep(60)
     client.stream.stop()
 
 

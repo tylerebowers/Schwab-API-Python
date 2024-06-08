@@ -3,9 +3,9 @@ import base64
 import requests
 import threading
 import urllib.parse
+from . import color_print
 from .stream import Stream
 from datetime import datetime
-from schwabdev import terminal
 
 
 class Client:
@@ -38,15 +38,15 @@ class Client:
             self.id_token = token_dictionary.get("id_token")
             self._access_token_issued = at_issued
             self._refresh_token_issued = rt_issued
-            terminal.color_print.info(self._access_token_issued.strftime(
+            color_print.info(self._access_token_issued.strftime(
                 "Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.now() - self._access_token_issued).seconds} seconds)")
-            terminal.color_print.info(self._refresh_token_issued.strftime(
+            color_print.info(self._refresh_token_issued.strftime(
                 "Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.now() - self._refresh_token_issued).days} days)")
             # check if tokens need to be updated and update if needed
             self.update_tokens()
         else:
             # The tokens file doesn't exist, so create it.
-            terminal.color_print.warning(f"Token file does not exist or invalid formatting, creating \"{str(tokens_file)}\"")
+            color_print.warning(f"Token file does not exist or invalid formatting, creating \"{str(tokens_file)}\"")
             open(self._tokens_file, 'w').close()
             # Tokens must be updated.
             self._update_refresh_token()
@@ -56,26 +56,26 @@ class Client:
             resp = self.account_linked()
             if resp.ok:
                 d = resp.json()
-                terminal.color_print.info(f"Linked Accounts: {d}")
+                color_print.info(f"Linked Accounts: {d}")
             else:  # app might not be "Ready For Use"
-                terminal.color_print.error("Could not get linked accounts.")
-                terminal.color_print.error("Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
-                terminal.color_print.error(resp.json())
+                color_print.error("Could not get linked accounts.")
+                color_print.error("Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
+                color_print.error(resp.json())
             resp.close()
 
-        terminal.color_print.info("Initialization Complete")
+        color_print.info("Initialization Complete")
 
     def update_tokens(self):
         if (datetime.now() - self._refresh_token_issued).days >= (
                 self._refresh_token_timeout - 1):  # check if we need to update refresh (and access) token
-            for i in range(5):  terminal.color_print.user("The refresh token has expired, please update!")
+            for i in range(5):  color_print.user("The refresh token has expired, please update!")
             self._update_refresh_token()
         elif ((datetime.now() - self._access_token_issued).days >= 1) or (
                 (datetime.now() - self._access_token_issued).seconds > (
                 self._access_token_timeout - 60)):  # check if we need to update access token
-            terminal.color_print.info("The access token has expired, updating automatically.")
+            color_print.info("The access token has expired, updating automatically.")
             self._update_access_token()
-        # else: terminal.color_print.info("Token check passed")
+        # else: color_print.info("Token check passed")
 
     def update_tokens_auto(self):
         def checker():
@@ -103,21 +103,21 @@ class Client:
                 self.id_token = new_td.get("id_token")
                 self._write_tokens_file(self._access_token_issued, refresh_token_issued, new_td)
                 # show user that we have updated the access token
-                terminal.color_print.info(f"Access token updated: {self._access_token_issued}")
+                color_print.info(f"Access token updated: {self._access_token_issued}")
                 break
             else:
-                terminal.color_print.error(f"Could not get new access token ({i+1} of 3).")
+                color_print.error(f"Could not get new access token ({i+1} of 3).")
 
     # get new access and refresh tokens using authorization code.
     def _update_refresh_token(self):
         import webbrowser
         # get authorization code (requires user to authorize)
-        terminal.color_print.user("Please authorize this program to access your schwab account.")
+        color_print.user("Please authorize this program to access your schwab account.")
         auth_url = f'https://api.schwabapi.com/v1/oauth/authorize?client_id={self._app_key}&redirect_uri={self._callback_url}'
-        terminal.color_print.user(f"Click to authenticate: {auth_url}")
-        terminal.color_print.user("Opening browser...")
+        color_print.user(f"Click to authenticate: {auth_url}")
+        color_print.user("Opening browser...")
         webbrowser.open(auth_url)
-        response_url = terminal.color_print.input(
+        response_url = color_print.input(
             "After authorizing, wait for it to load (<1min) and paste the WHOLE url here: ")
         code = f"{response_url[response_url.index('code=') + 5:response_url.index('%40')]}@"  # session = responseURL[responseURL.index("session=")+8:]
         # get new access and refresh tokens
@@ -130,10 +130,10 @@ class Client:
             self.refresh_token = new_td.get("refresh_token")
             self.id_token = new_td.get("id_token")
             self._write_tokens_file(self._access_token_issued, self._refresh_token_issued, new_td)
-            terminal.color_print.info("Refresh and Access tokens updated")
+            color_print.info("Refresh and Access tokens updated")
         else:
-            terminal.color_print.error("Could not get new refresh and access tokens.")
-            terminal.color_print.error(
+            color_print.error("Could not get new refresh and access tokens.")
+            color_print.error(
                 "Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
 
     def _post_oauth_token(self, grant_type, code):
@@ -146,7 +146,7 @@ class Client:
         elif grant_type == 'refresh_token':  # refreshes the access token
             data = {'grant_type': 'refresh_token', 'refresh_token': code}
         else:
-            terminal.color_print.error("Invalid grant type")
+            color_print.error("Invalid grant type")
             return None
         return requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data)
 
@@ -159,7 +159,7 @@ class Client:
                 json.dump(toWrite, f, ensure_ascii=False, indent=4)
                 f.flush()
         except Exception as e:
-            terminal.color_print.error(e)
+            color_print.error(e)
 
 
     def _read_tokens_file(self):
@@ -168,7 +168,7 @@ class Client:
                 d = json.load(f)
                 return datetime.fromisoformat(d.get("access_token_issued")), datetime.fromisoformat(d.get("refresh_token_issued")), d.get("token_dictionary")
         except Exception as e:
-            terminal.color_print.error(e)
+            color_print.error(e)
             return None, None, None
 
     # params_parser removed None (null) values

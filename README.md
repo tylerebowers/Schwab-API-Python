@@ -1,18 +1,36 @@
-# Schwab-API-Python 
+# Schwab-API-Python
+![PyPI - Version](https://img.shields.io/pypi/v/schwabdev) ![Discord](https://img.shields.io/discord/1076596998150561873?logo=discord) ![PyPI - Downloads](https://img.shields.io/pypi/dm/schwabdev) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?business=8VDFKHMBFSC2Q&no_recurring=0&currency_code=USD) ![YouTube Video Views](https://img.shields.io/youtube/views/kHbom0KIJwc?style=flat&logo=youtube)  
 This is an unofficial python program to access the Schwab api.    
 You will need a Schwab developer account [here](https://beta-developer.schwab.com/).  
 Join the [Discord group](https://discord.gg/m7SSjr9rs9).  
-Also found on [PyPI](https://pypi.org/project/schwabdev/), install via `pip3 install schwabdev` 
+Also found on [PyPI](https://pypi.org/project/schwabdev/).  
 
+## Installation 
+1. Requirements: `pip install requests websockets manyterm`
+2. `pip install schwabdev`  
+
+*You may need to use `pip3` instead of `pip`*
 
 ## Quick setup
-1. Create a new Schwab individual developer app with callback url "https://127.0.0.1" (case sensitive) and wait until the status is "Ready for use", note that "Approved - Pending" will not work.
-2. Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
-3. Python version 3.11 or higher is required.     
-4. `pip3 install schwabdev requests websockets tk` (tkinter/tk may need to be installed differently)
-5. Import the package `import schwabdev`
-6. Create a client `client = schwabdev.Client('Your app key', 'Your app secret')`
-7. Examples on how to use the client are in `tests/api_demo.py` and `tests/stream_demo.py`
+1. Setup your Schwab developer account
+   - Create a new Schwab individual developer app with callback url "https://127.0.0.1" (case sensitive) 
+   - Wait until the status is "Ready for use", note that "Approved - Pending" will not work.
+   - Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
+2. Install packages
+   - Install schwabdev and requirements `pip install schwabdev requests websockets manyterm`
+   - *You may need to use `pip3` instead of `pip`*
+3. Examples on how to use the client are in `tests/api_demo.py` | `tests/stream_demo.py`
+   - The first time you run you will have to sign in to your Schwab account using the generated link in the terminal. After signing in, agree to the terms, and select account(s). Then you will have to copy the link in the address bar and paste it into the terminal. 
+   - Questions? - join the [Discord group](https://discord.gg/m7SSjr9rs9).  
+```py
+import schwabdev #import the package
+
+client = schwabdev.Client('Your app key', 'Your app secret')  #create a client
+
+client.update_tokens_auto() #start the auto access token updater
+
+print(client.account_linked().json()) #make api calls
+```
 
 ## What can this program do?
  - Authenticate and access the api 
@@ -27,7 +45,7 @@ Also found on [PyPI](https://pypi.org/project/schwabdev/), install via `pip3 ins
 The schwabdev folder contains code for main operations:     
  - `api.py` contains functions relating to api calls, requests, and automatic token checker threads.
  - `stream.py` contains functions for streaming data from websockets.
- - `terminal.py` contains a program for making additional terminal windows and printing to the terminal with color.
+ - `color_print.py` contains functions to print to the terminal with color.
 
 ## License (MIT)
 
