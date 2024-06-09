@@ -117,7 +117,7 @@ class Client:
         color_print.user(f"Click to authenticate: {auth_url}")
         color_print.user("Opening browser...")
         webbrowser.open(auth_url)
-        response_url = color_print.input(
+        response_url = color_print.user_input(
             "After authorizing, wait for it to load (<1min) and paste the WHOLE url here: ")
         code = f"{response_url[response_url.index('code=') + 5:response_url.index('%40')]}@"  # session = responseURL[responseURL.index("session=")+8:]
         # get new access and refresh tokens
