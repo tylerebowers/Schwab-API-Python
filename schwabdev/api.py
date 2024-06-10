@@ -132,9 +132,9 @@ class Client:
             self._write_tokens_file(self._access_token_issued, self._refresh_token_issued, new_td)
             color_print.info("Refresh and Access tokens updated")
         else:
-            color_print.error("Could not get new refresh and access tokens.")
-            color_print.error(
-                "Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
+            color_print.error("Could not get new refresh and access tokens, check these:\n    1. App status is "
+                              "\"Ready For Use\".\n    2. App key and app secret are valid.\n    3. You pasted the "
+                              "whole url within 30 seconds. (it has a quick expiration)")
 
     def _post_oauth_token(self, grant_type, code):
         headers = {
