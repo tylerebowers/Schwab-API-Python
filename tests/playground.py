@@ -9,7 +9,8 @@ def main():
 
     # a "terminal emulator" to play with the API
     history = []
-    print("\n\nTerminal emulator")
+    print("\nTerminal emulator")
+    print("Enter code to execute.")
     while True:
         try:
             entered = input("Enter something to execute:\n")
