@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.9.2'
+VERSION = '1.9.8'
 DESCRIPTION = 'Schwab API Python Client (unofficial)'
 with open('README.md', 'r') as f:
     LONG_DESCRIPTION = f.read()
@@ -24,7 +24,7 @@ setup(
     keywords=['python', 'schwab', 'api', 'client', 'finance', 'trading', 'stocks', 'equities', 'options', 'forex', 'futures'],
     classifiers=[
         'Topic :: Office/Business :: Financial :: Investment',
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent',

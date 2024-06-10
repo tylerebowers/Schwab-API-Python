@@ -148,43 +148,42 @@ class Stream:
         if type(ls) is str: return ls
         elif type(ls) is list: return ",".join(map(str, ls))
 
-    default_command = "ADD"
 
-    def level_one_equities(self, keys, fields, command=default_command):  # Service not available or temporary down.
+    def level_one_equities(self, keys, fields, command="ADD"):  # Service not available or temporary down.
         return self.basic_request("LEVELONE_EQUITIES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_options(self, keys, fields, command=default_command):
+    def level_one_options(self, keys, fields, command="ADD"):
         return self.basic_request("LEVELONE_OPTIONS", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_futures(self, keys, fields, command=default_command):
+    def level_one_futures(self, keys, fields, command="ADD"):
         return self.basic_request("LEVELONE_FUTURES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_futures_options(self, keys, fields, command=default_command):
+    def level_one_futures_options(self, keys, fields, command="ADD"):
         return self.basic_request("LEVELONE_FUTURES_OPTIONS", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_forex(self, keys, fields, command=default_command):
+    def level_one_forex(self, keys, fields, command="ADD"):
         return self.basic_request("LEVELONE_FOREX", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def nyse_book(self, keys, fields, command=default_command):
+    def nyse_book(self, keys, fields, command="ADD"):
         return self.basic_request("NYSE_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def nasdaq_book(self, keys, fields, command=default_command):
+    def nasdaq_book(self, keys, fields, command="ADD"):
         return self.basic_request("NASDAQ_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def options_book(self, keys, fields, command=default_command):
+    def options_book(self, keys, fields, command="ADD"):
         return self.basic_request("OPTIONS_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def chart_equity(self, keys, fields, command=default_command):
+    def chart_equity(self, keys, fields, command="ADD"):
         return self.basic_request("CHART_EQUITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def chart_futures(self, keys, fields, command=default_command):
+    def chart_futures(self, keys, fields, command="ADD"):
         return self.basic_request("CHART_FUTURES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def screener_equity(self, keys, fields, command=default_command):
+    def screener_equity(self, keys, fields, command="ADD"):
         return self.basic_request("SCREENER_EQUITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def screener_option(self, keys, fields, command=default_command):
+    def screener_option(self, keys, fields, command="ADD"):
         return self.basic_request("SCREENER_OPTION", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def account_activity(self, keys, fields, command=default_command):
+    def account_activity(self, keys="Account Activity", fields="0,1,2,3", command="SUBS"): # can only use SUBS or UNSUBS
         return self.basic_request("ACCT_ACTIVITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
