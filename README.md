@@ -1,18 +1,14 @@
 # Schwab-API-Python
 ![PyPI - Version](https://img.shields.io/pypi/v/schwabdev) ![Discord](https://img.shields.io/discord/1076596998150561873?logo=discord) ![PyPI - Downloads](https://img.shields.io/pypi/dm/schwabdev) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?business=8VDFKHMBFSC2Q&no_recurring=0&currency_code=USD) ![YouTube Video Views](https://img.shields.io/youtube/views/kHbom0KIJwc?style=flat&logo=youtube)  
-This is an unofficial python program to access the Schwab api.    
-You will need a Schwab developer account [here](https://beta-developer.schwab.com/).  
-Join the [Discord group](https://discord.gg/m7SSjr9rs9).  
-Also found on [PyPI](https://pypi.org/project/schwabdev/).  
+This is an unofficial python program to access the Schwab api.  
+[Discord](https://discord.gg/m7SSjr9rs9), [PyPI](https://pypi.org/project/schwabdev/), [Youtube](https://youtube.com/playlist?list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8), [Github](https://github.com/tylerebowers/Schwab-API-Python).
 
 ## Installation 
-1. Requirements: `pip install requests websockets manyterm`
-2. `pip install schwabdev`  
-
+`pip install schwabdev requests websockets manyterm`  
 *You may need to use `pip3` instead of `pip`*
 
 ## Quick setup
-1. Setup your Schwab developer account
+1. Setup your Schwab developer account [here](https://beta-developer.schwab.com/).
    - Create a new Schwab individual developer app with callback url "https://127.0.0.1" (case sensitive) 
    - Wait until the status is "Ready for use", note that "Approved - Pending" will not work.
    - Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
@@ -46,6 +42,10 @@ The schwabdev folder contains code for main operations:
  - `api.py` contains functions relating to api calls, requests, and automatic token checker threads.
  - `stream.py` contains functions for streaming data from websockets.
  - `color_print.py` contains functions to print to the terminal with color.
+
+## Youtube Tutorials
+1. [Authentication and Requests](https://www.youtube.com/watch?v=kHbom0KIJwc&ab_channel=TylerBowers) *Github code has significantly changed since this video*
+2. [Streaming Real-time Data](https://www.youtube.com/watch?v=t7F2dUecgWc&list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8&index=2&ab_channel=TylerBowers)
 
 ## License (MIT)
 

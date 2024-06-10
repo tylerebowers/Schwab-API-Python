@@ -37,7 +37,7 @@ def main():
 
     # client.stream.send(client.stream.level_one_options("keys", "0,1,2,3,4,5,6,7,8"))
 
-    # client.stream.send(client.stream.level_one_futures("/ES", "0,1,2,3,4,5,6"))
+    client.stream.send(client.stream.level_one_futures("/ES", "0,1,2,3,4,5,6"))
 
     # client.stream.send(client.stream.level_one_futures_options("keys", "0,1,2,3,4,5"))
 
