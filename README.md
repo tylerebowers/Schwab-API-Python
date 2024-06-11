@@ -4,7 +4,7 @@ This is an unofficial python program to access the Schwab api.
 [Discord](https://discord.gg/m7SSjr9rs9), [PyPI](https://pypi.org/project/schwabdev/), [Youtube](https://youtube.com/playlist?list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8), [Github](https://github.com/tylerebowers/Schwab-API-Python).
 
 ## Installation 
-`pip install schwabdev requests websockets manyterm`  
+`pip install schwabdev requests websockets`  
 *You may need to use `pip3` instead of `pip`*
 
 ## Quick setup
@@ -13,7 +13,7 @@ This is an unofficial python program to access the Schwab api.
    - Wait until the status is "Ready for use", note that "Approved - Pending" will not work.
    - Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
 2. Install packages
-   - Install schwabdev and requirements `pip install schwabdev requests websockets manyterm`
+   - Install schwabdev and requirements `pip install schwabdev requests websockets`
    - *You may need to use `pip3` instead of `pip`*
 3. Examples on how to use the client are in `tests/api_demo.py` | `tests/stream_demo.py`
    - The first time you run you will have to sign in to your Schwab account using the generated link in the terminal. After signing in, agree to the terms, and select account(s). Then you will have to copy the link in the address bar and paste it into the terminal. 
