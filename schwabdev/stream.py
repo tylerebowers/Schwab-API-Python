@@ -13,6 +13,7 @@ from . import color_print
 import websockets.exceptions
 from datetime import datetime, time
 
+
 class Stream:
 
     def __init__(self, client):
@@ -22,11 +23,11 @@ class Stream:
         self._request_id = 0  # a counter for the request id
         self._queue = []  # a queue of requests to be sent
         self.active = False
-        self.client = client  # so we can get streamer info
+        self._client = client  # so we can get streamer info
 
     async def _start_streamer(self, receiver_func="default"):
         # get streamer info
-        response = self.client.preferences()
+        response = self._client.preferences()
         if response.ok:
             self._streamer_info = response.json().get('streamerInfo', None)[0]
         else:
@@ -43,7 +44,7 @@ class Stream:
                 color_print.info("Connecting to streaming server -> ", end="")
                 async with websockets.connect(self._streamer_info.get('streamerSocketUrl'), ping_interval=None) as self._websocket:
                     print("Connected.")
-                    login_payload = self.basic_request(service="ADMIN", command="LOGIN", parameters={"Authorization": self.client.access_token, "SchwabClientChannel": self._streamer_info.get("schwabClientChannel"), "SchwabClientFunctionId": self._streamer_info.get("schwabClientFunctionId")})
+                    login_payload = self.basic_request(service="ADMIN", command="LOGIN", parameters={"Authorization": self._client.access_token, "SchwabClientChannel": self._streamer_info.get("schwabClientChannel"), "SchwabClientFunctionId": self._streamer_info.get("schwabClientFunctionId")})
                     await self._websocket.send(json.dumps(login_payload))
                     receiver_func(await self._websocket.recv())
                     self.active = True
@@ -120,7 +121,7 @@ class Stream:
 
     def basic_request(self, service, command, parameters=None):
         if self._streamer_info is None:
-            response = self.client.preferences()
+            response = self._client.preferences()
             if response.ok:
                 self._streamer_info = response.json().get('streamerInfo', None)[0]
 

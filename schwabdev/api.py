@@ -190,7 +190,7 @@ class Client:
         elif form == "epoch_ms":
             return int(dt.timestamp() * 1000)
         elif form == "YYYY-MM-DD":
-            return dt.strftime("%Y-%M-%d")
+            return dt.strftime("%Y-%m-%d")
         else:
             return dt
 

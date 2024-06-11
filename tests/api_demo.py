@@ -112,10 +112,9 @@ def main():
     print(client.option_expiration_chain("AAPL").json())
 
     print("\n\nMarket Data - PriceHistory (in Schwab API documentation)")
-    print("|\n|There is a lot to print so this is not shown, the demo code is commented out")
     # get price history for a symbol
-    # print("|\n|client.price_history(\"AAPL\").json()", end="\n|")
-    # print(client.price_history("AAPL").json())
+    print("|\n|client.price_history(\"AAPL\", \"year\").json()", end="\n|")
+    print(client.price_history("AAPL", "year").json())
 
     print("\n\nMarket Data - Movers (in Schwab API documentation)")
 
