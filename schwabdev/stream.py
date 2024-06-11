@@ -6,7 +6,6 @@ Github: https://github.com/tylerebowers/Schwab-API-Python
 
 import json
 import asyncio
-import manyterm
 import threading
 import websockets
 from time import sleep
@@ -20,7 +19,6 @@ class Stream:
         self._websocket = None
         self._streamer_info = None
         self._start_timestamp = None
-        self._terminal = None
         self._request_id = 0  # a counter for the request id
         self._queue = []  # a queue of requests to be sent
         self.active = False
@@ -36,12 +34,7 @@ class Stream:
 
         # specify receiver (what do we do with received data)
         if receiver_func == "default":
-            if self._terminal is None:
-                self._terminal = manyterm.Terminal(title="Stream output")
-
-            def default_receiver(data):
-                self._terminal.print(data)
-            receiver_func = default_receiver
+            receiver_func = print
 
         # start the stream
         while True:
@@ -58,6 +51,7 @@ class Stream:
                     while self._queue:
                         await self._websocket.send(json.dumps({"requests": self._queue.pop(0)}))
                         receiver_func(await self._websocket.recv())
+                    # TODO: send logout request atexit (when the program closes)
                     # TODO: resend requests if the stream crashes
                     while True:
                         receiver_func(await self._websocket.recv())
@@ -148,8 +142,7 @@ class Stream:
         if type(ls) is str: return ls
         elif type(ls) is list: return ",".join(map(str, ls))
 
-
-    def level_one_equities(self, keys, fields, command="ADD"):  # Service not available or temporary down.
+    def level_one_equities(self, keys, fields, command="ADD"):
         return self.basic_request("LEVELONE_EQUITIES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
     def level_one_options(self, keys, fields, command="ADD"):
