@@ -181,7 +181,7 @@ class Client:
     def _time_convert(self, dt=None, form="8601"):
         if dt is None:
             return None
-        elif dt is str:
+        elif isinstance(dt, str):
             return dt
         elif form == "8601":  # assume datetime object from here on
             return f'{dt.isoformat()[:-3]}Z'
