@@ -10,7 +10,7 @@ from datetime import datetime
 
 class Client:
 
-    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", show_linked=True):
+    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, show_linked=True):
         if app_key is None or app_secret is None or callback_url is None or tokens_file is None:
             raise Exception("app_key, app_secret, callback_url, and tokens_file cannot be None.")
         elif len(app_key) != 32 or len(app_secret) != 16:
@@ -27,6 +27,7 @@ class Client:
         self._access_token_timeout = 1800  # in seconds (from schwab)
         self._refresh_token_timeout = 7  # in days (from schwab)
         self._tokens_file = tokens_file  # path to tokens file
+        self.timeout = timeout
         self.stream = Stream(self)
 
         # Try to load tokens from the tokens file
@@ -212,21 +213,21 @@ class Client:
     def account_linked(self):
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/accountNumbers',
                             headers={'Authorization': f'Bearer {self.access_token}'},
-                            timeout=2)
+                            timeout=self.timeout)
 
     # Get account details for all linked accounts, details such as balance, positions, buying power, etc.
     def account_details_all(self, fields=None):
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'fields': fields}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # Get account details for one linked account, uses default account.
     def account_details(self, accountHash, fields=None):
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'fields': fields}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # Get all orders for one linked account, uses default account.
     def account_orders(self, accountHash, maxResults, fromEnteredTime, toEnteredTime, status=None):
@@ -235,7 +236,7 @@ class Client:
                             params=self._params_parser(
                                 {'maxResults': maxResults, 'fromEnteredTime': self._time_convert(fromEnteredTime, "8601"),
                                  'toEnteredTime': self._time_convert(toEnteredTime, "8601"), 'status': status}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # place an order for one linked account (uses default account)
     def order_place(self, accountHash, order):
@@ -243,19 +244,19 @@ class Client:
                              headers={"Accept": "application/json", 'Authorization': f'Bearer {self.access_token}',
                                       "Content-Type": "application/json"},
                              json=order,
-                             timeout=2)
+                             timeout=self.timeout)
 
     # get order details using order id (uses default account)
     def order_details(self, accountHash, orderId):
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
                             headers={'Authorization': f'Bearer {self.access_token}'},
-                            timeout=2)
+                            timeout=self.timeout)
 
     # cancel order using order id (uses default account)
     def order_cancel(self, accountHash, orderId):
         return requests.delete(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
                                headers={'Authorization': f'Bearer {self.access_token}'},
-                               timeout=2)
+                               timeout=self.timeout)
 
     # replace order using order id (uses default account)
     def order_replace(self, accountHash, orderId, order):
@@ -263,7 +264,7 @@ class Client:
                             headers={"Accept": "application/json", 'Authorization': f'Bearer {self.access_token}',
                                      "Content-Type": "application/json"},
                             json=order,
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get all orders across all linked accounts
     def account_orders_all(self, maxResults, fromEnteredTime, toEnteredTime, status=None):
@@ -272,7 +273,7 @@ class Client:
                             params=self._params_parser(
                                 {'maxResults': maxResults, 'fromEnteredTime': self._time_convert(fromEnteredTime, "8601"),
                                  'toEnteredTime': self._time_convert(toEnteredTime, "8601"), 'status': status}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     """ #COMING SOON (waiting on Schwab)
       # /accounts/{accountHash}/previewOrder
@@ -291,7 +292,7 @@ class Client:
                             params=self._params_parser(
                                 {'accountNumber': accountHash, 'startDate': self._time_convert(startDate, "8601"),
                                  'endDate': self._time_convert(endDate, "8601"), 'symbol': symbol, 'types': types}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get transaction details using transaction id (uses default account)
     def transaction_details(self, accountHash, transactionId):
@@ -303,13 +304,13 @@ class Client:
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions/{transactionId}',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params={'accountNumber': accountHash, 'transactionId': transactionId},
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get user preferences, includes streaming info
     def preferences(self):
         return requests.get(f'{self._base_api_url}/trader/v1/userPreference',
                             headers={'Authorization': f'Bearer {self.access_token}'},
-                            timeout=2)
+                            timeout=self.timeout)
 
     """
     Market Data
@@ -321,14 +322,14 @@ class Client:
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser(
                                 {'symbols': self._format_list(symbols), 'fields': fields, 'indicative': indicative}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get a single quote for a ticker
     def quote(self, symbol_id, fields=None):
         return requests.get(f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote(symbol_id)}/quotes',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'fields': fields}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get option chains for a ticker
     def option_chains(self, symbol, contractType=None, strikeCount=None, includeUnderlyingQuote=None, strategy=None,
@@ -343,14 +344,14 @@ class Client:
                                  'toDate': toDate, 'volatility': volatility, 'underlyingPrice': underlyingPrice,
                                  'interestRate': interestRate, 'daysToExpiration': daysToExpiration,
                                  'expMonth': expMonth, 'optionType': optionType, 'entitlement': entitlement}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get an option expiration chain for a ticker
     def option_expiration_chain(self, symbol):
         return requests.get(f'{self._base_api_url}/marketdata/v1/expirationchain',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'symbol': symbol}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get price history for a ticker
     def price_history(self, symbol, periodType=None, period=None, frequencyType=None, frequency=None, startDate=None,
@@ -363,14 +364,14 @@ class Client:
                                                         'endDate': self._time_convert(endDate, 'epoch_ms'),
                                                         'needExtendedHoursData': needExtendedHoursData,
                                                         'needPreviousClose': needPreviousClose}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get movers in a specific index and direction
     def movers(self, symbol, sort=None, frequency=None):
         return requests.get(f'{self._base_api_url}/marketdata/v1/movers/{symbol}',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'sort': sort, 'frequency': frequency}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get market hours for a list of markets
     def market_hours(self, symbols, date=None):
@@ -379,24 +380,24 @@ class Client:
                             params=self._params_parser(
                                 {'markets': symbols, #self._format_list(symbols),
                                  'date': self._time_convert(date, 'YYYY-MM-DD')}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get market hours for a single market
     def market_hour(self, market_id, date=None):
         return requests.get(f'{self._base_api_url}/marketdata/v1/markets/{market_id}',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get instruments for a list of symbols
     def instruments(self, symbol, projection):
         return requests.get(f'{self._base_api_url}/marketdata/v1/instruments',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params={'symbol': symbol, 'projection': projection},
-                            timeout=2)
+                            timeout=self.timeout)
 
     # get instruments for a single cusip
     def instrument_cusip(self, cusip_id):
         return requests.get(f'{self._base_api_url}/marketdata/v1/instruments/{cusip_id}',
                             headers={'Authorization': f'Bearer {self.access_token}'},
-                            timeout=2)
+                            timeout=self.timeout)
