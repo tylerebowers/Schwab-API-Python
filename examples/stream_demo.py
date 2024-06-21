@@ -4,11 +4,14 @@ import os
 
 
 def main():
+    # place your app key and app secret in the .env file
+    load_dotenv()  # load environment variables from .env file
+
     client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'))
     client.update_tokens_auto()  # update tokens automatically (except refresh token)
 
     """ 
-    # example of using your own response handler, prints to main terminal instead of a separate window
+    # example of using your own response handler, prints to main terminal.
     def my_handler(message):
         print(message)
     client.stream.start(my_handler)
@@ -67,5 +70,4 @@ def main():
 
 if __name__ == '__main__':
     print("Welcome to the unofficial Schwab interface!\nGithub: https://github.com/tylerebowers/Schwab-API-Python")
-    load_dotenv()
     main()  # call the user code above

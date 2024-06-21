@@ -5,6 +5,7 @@ Github: https://github.com/tylerebowers/Schwab-API-Python
 """
 
 import json
+import atexit
 import asyncio
 import threading
 import websockets
@@ -17,6 +18,11 @@ from datetime import datetime, time
 class Stream:
 
     def __init__(self, client):
+        """
+        Initialize the stream object to stream data from Schwab Streamer
+        :param client: Client object
+        :type client: Client
+        """
         self._websocket = None
         self._streamer_info = None
         self._start_timestamp = None
@@ -26,6 +32,11 @@ class Stream:
         self._client = client  # so we can get streamer info
 
     async def _start_streamer(self, receiver_func="default"):
+        """
+        Start the streamer
+        :param receiver_func: function to call when data is received
+        :type receiver_func: function
+        """
         # get streamer info
         response = self._client.preferences()
         if response.ok:
@@ -36,6 +47,9 @@ class Stream:
         # specify receiver (what do we do with received data)
         if receiver_func == "default":
             receiver_func = print
+
+        # register atexit to stop the stream
+        atexit.register(self.stop)
 
         # start the stream
         while True:
@@ -70,6 +84,11 @@ class Stream:
                     color_print.warning("Connection lost to server, reconnecting...")
 
     def start(self, receiver="default"):
+        """
+        Start the stream
+        :param receiver: function to call when data is received
+        :type receiver: function
+        """
         def _start_async():
             asyncio.run(self._start_streamer(receiver))
 
@@ -77,6 +96,13 @@ class Stream:
         sleep(1) # if the thread does not start in time then the main program may close before the streamer starts
 
     def start_automatic(self, after_hours=False, pre_hours=False):
+        """
+        Start the stream automatically at market open and close
+        :param after_hours: include after hours trading
+        :type after_hours: bool
+        :param pre_hours: include pre hours trading
+        :type pre_hours: bool
+        """
         start = time(9, 29, 0)  # market opens at 9:30
         end = time(16, 0, 0)  # market closes at 4:00
         if pre_hours:
@@ -102,6 +128,11 @@ class Stream:
 
 
     def send(self, requests):
+        """
+        Send a request to the stream
+        :param requests: list of requests or a single request
+        :type requests: list | dict
+        """
         async def _send(to_send):
             await self._websocket.send(to_send)
         if type(requests) is not list:
@@ -115,11 +146,25 @@ class Stream:
 
     # TODO: Fix this (wont properly close)
     def stop(self):
+        """
+        Stop the stream
+        """
         self._request_id += 1
         self.send(self.basic_request(service="ADMIN", command="LOGOUT"))
         self.active = False
 
     def basic_request(self, service, command, parameters=None):
+        """
+        Create a basic request (all requests follow this format)
+        :param service: service to use
+        :type service: str
+        :param command: command to use ("SUBS"|"ADD"|"UNSUBS"|"VIEW"|"LOGIN"|"LOGOUT")
+        :type command: str
+        :param parameters: parameters to use
+        :type parameters: dict
+        :return: request
+        :rtype: dict
+        """
         if self._streamer_info is None:
             response = self._client.preferences()
             if response.ok:
@@ -135,11 +180,18 @@ class Stream:
             self._request_id += 1
             return request
         else:
-            color_print.error("Could not get streamerInfo")
+            color_print.error("Could not use/get streamerInfo")
             return None
 
     @staticmethod
     def _list_to_string(ls):
+        """
+        Convert a list to a string (e.g. [1, "B", 3] -> "1,B,3"), or passthrough if already a string
+        :param ls: list to convert
+        :type ls: list | str
+        :return: converted string
+        :rtype: str
+        """
         if type(ls) is str: return ls
         elif type(ls) is list: return ",".join(map(str, ls))
 
