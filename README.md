@@ -15,7 +15,7 @@ This is an unofficial python program to access the Schwab api.
 2. Install packages
    - Install schwabdev and requirements `pip install schwabdev requests websockets`
    - *You may need to use `pip3` instead of `pip`*
-3. Examples on how to use the client are in `tests/api_demo.py` | `tests/stream_demo.py` (add your keys in the .env file)  
+3. Examples on how to use the client are in `examples/api_demo.py` | `examples/stream_demo.py` (add your keys in the .env file)  
    - The first time you run you will have to sign in to your Schwab account using the generated link in the terminal. After signing in, agree to the terms, and select account(s). Then you will have to copy the link in the address bar and paste it into the terminal. 
    - Questions? - join the [Discord group](https://discord.gg/m7SSjr9rs9).  
 ```py
@@ -30,9 +30,9 @@ print(client.account_linked().json()) #make api calls
 
 ## What can this program do?
  - Authenticate and access the api 
- - Functions for all api functions (examples in `tests/api_demo.py`)
+ - Functions for all api functions (examples in `examples/api_demo.py`)
  - Auto "access token" updates (`client.update_tokens_auto()`)
- - Stream real-time data with customizable response handler (examples in `tests/stream_demo.py`)
+ - Stream real-time data with customizable response handler (examples in `examples/stream_demo.py`)
  ### TBD 
  - Automatic refresh token updates. (Waiting for Schwab implementation)
 
