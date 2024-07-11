@@ -29,9 +29,10 @@ class Stream:
         self._request_id = 0  # a counter for the request id
         self._queue = []  # a queue of requests to be sent
         self.active = False
+        self._thread = None
         self._client = client  # so we can get streamer info
 
-    async def _start_streamer(self, receiver_func="default"):
+    async def _start_streamer(self, receiver_func=print, *args, **kwargs):
         """
         Start the streamer
         :param receiver_func: function to call when data is received
@@ -43,10 +44,6 @@ class Stream:
             self._streamer_info = response.json().get('streamerInfo', None)[0]
         else:
             color_print.error("Could not get streamerInfo")
-
-        # specify receiver (what do we do with received data)
-        if receiver_func == "default":
-            receiver_func = print
 
         # register atexit to stop the stream
         atexit.register(self.stop)
@@ -60,16 +57,16 @@ class Stream:
                     print("Connected.")
                     login_payload = self.basic_request(service="ADMIN", command="LOGIN", parameters={"Authorization": self._client.access_token, "SchwabClientChannel": self._streamer_info.get("schwabClientChannel"), "SchwabClientFunctionId": self._streamer_info.get("schwabClientFunctionId")})
                     await self._websocket.send(json.dumps(login_payload))
-                    receiver_func(await self._websocket.recv())
+                    receiver_func(await self._websocket.recv(), *args, **kwargs)
                     self.active = True
                     # send queued requests
                     while self._queue:
                         await self._websocket.send(json.dumps({"requests": self._queue.pop(0)}))
-                        receiver_func(await self._websocket.recv())
+                        receiver_func(await self._websocket.recv(), *args, **kwargs)
                     # TODO: send logout request atexit (when the program closes)
                     # TODO: resend requests if the stream crashes
                     while True:
-                        receiver_func(await self._websocket.recv())
+                        receiver_func(await self._websocket.recv(), *args, **kwargs)
             except Exception as e:
                 self.active = False
                 if e is websockets.exceptions.ConnectionClosedOK or str(e) == "received 1000 (OK); then sent 1000 (OK)":
@@ -83,16 +80,17 @@ class Stream:
                     color_print.error(f"{e}")
                     color_print.warning("Connection lost to server, reconnecting...")
 
-    def start(self, receiver="default"):
+    def start(self, receiver=print, *args, **kwargs):
         """
         Start the stream
         :param receiver: function to call when data is received
         :type receiver: function
         """
         def _start_async():
-            asyncio.run(self._start_streamer(receiver))
+            asyncio.run(self._start_streamer(receiver, *args, **kwargs))
 
-        threading.Thread(target=_start_async, daemon=False).start()
+        self._thread = threading.Thread(target=_start_async, daemon=False)
+        self._thread.start()
         sleep(1) # if the thread does not start in time then the main program may close before the streamer starts
 
     def start_automatic(self, after_hours=False, pre_hours=False):
