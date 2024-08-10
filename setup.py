@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
-VERSION = '2.1.1'
-DESCRIPTION = 'Schwab API Python Client (unofficial)'
+VERSION = '2.2.0'
+DESCRIPTION = 'An easy and lightweight wrapper for using the Charles Schwab API.'
 with open('README.md', 'r') as f:
     LONG_DESCRIPTION = f.read()
 

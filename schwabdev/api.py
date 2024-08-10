@@ -1,16 +1,17 @@
 import json
+import time
 import base64
 import requests
 import threading
+import webbrowser
 import urllib.parse
-from . import color_print
 from .stream import Stream
 from datetime import datetime
 
 
 class Client:
 
-    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, verbose=True, show_linked=True):
+    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, verbose=False, update_tokens_auto=True):
         """
         Initialize a client to access the Schwab API.
         :param app_key: app key credentials
@@ -29,25 +30,40 @@ class Client:
         :type show_linked: bool
         """
 
-        if app_key is None or app_secret is None or callback_url is None or tokens_file is None:
-            raise Exception("app_key, app_secret, callback_url, and tokens_file cannot be None.")
+        if app_key is None:
+            raise Exception("app_key cannot be None.")
+        elif app_secret is None:
+            raise Exception("app_secret cannot be None.")
+        elif callback_url is None:
+            raise Exception("callback_url cannot be None.")
+        elif tokens_file is None:
+            raise Exception("tokens_file cannot be None.")
         elif len(app_key) != 32 or len(app_secret) != 16:
             raise Exception("App key or app secret invalid length.")
+        elif callback_url[0:5] != "https":
+            raise Exception("callback_url must be https.")
+        elif callback_url[-1] == "/":
+            raise Exception("callback_url cannot be path (ends with \"/\").")
+        elif tokens_file[-1] == '/':
+            raise Exception("Tokens file cannot be path.")
+        elif timeout <= 0:
+            raise Exception("Timeout must be greater than 0 and is recomended to be 5 seconds or more.")
 
-        self._app_key = app_key
-        self._app_secret = app_secret
-        self._callback_url = callback_url
-        self.access_token = None
-        self.refresh_token = None
-        self.id_token = None
+        self._app_key = app_key             # app key credential
+        self._app_secret = app_secret       # app secret credential
+        self._callback_url = callback_url   # callback url to use
+        self.access_token = None            # access token from auth
+        self.refresh_token = None           # refresh token from auth
+        self.id_token = None                # id token from auth
         self._access_token_issued = None    # datetime of access token issue
         self._refresh_token_issued = None   # datetime of refresh token issue
         self._access_token_timeout = 1800   # in seconds (from schwab)
         self._refresh_token_timeout = 7     # in days (from schwab)
         self._tokens_file = tokens_file     # path to tokens file
-        self.timeout = timeout
-        self._verbose = verbose             # verbose mode
+        self.timeout = timeout              # timeout to use in requests
+        self.verbose = verbose              # verbose mode
         self.stream = Stream(self)          # init the streaming object
+        self.awaiting_input = False         # whether we are awaiting user input
 
         # Try to load tokens from the tokens file
         at_issued, rt_issued, token_dictionary = self._read_tokens_file()
@@ -58,60 +74,49 @@ class Client:
             self.id_token = token_dictionary.get("id_token")
             self._access_token_issued = at_issued
             self._refresh_token_issued = rt_issued
-            if self._verbose:
-                color_print.info(self._access_token_issued.strftime(
-                    "Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.now() - self._access_token_issued).seconds} seconds)")
-                color_print.info(self._refresh_token_issued.strftime(
-                    "Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.now() - self._refresh_token_issued).days} days)")
+            if self.verbose:
+                print(self._access_token_issued.strftime("Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.now() - self._access_token_issued).seconds} seconds)")
+                print(self._refresh_token_issued.strftime("Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.now() - self._refresh_token_issued).days} days)")
             # check if tokens need to be updated and update if needed
             self.update_tokens()
         else:
             # The tokens file doesn't exist, so create it.
-            color_print.warning(f"Token file does not exist or invalid formatting, creating \"{str(tokens_file)}\"")
+            if self.verbose:
+                print(f"Token file does not exist or invalid formatting, creating \"{str(tokens_file)}\"")
             open(self._tokens_file, 'w').close()
             # Tokens must be updated.
             self._update_refresh_token()
 
-        # get account numbers & hashes, this doubles as a checker to make sure that the appKey and appSecret are valid and that the app is ready for use
-        if show_linked and self._verbose:
-            resp = self.account_linked()
-            if resp.ok:
-                d = resp.json()
-                color_print.info(f"Linked Accounts: {d}")
-            else:  # app might not be "Ready For Use"
-                color_print.error("Could not get linked accounts.")
-                color_print.error("Please make sure that your app status is \"Ready For Use\" and that the app key and app secret are valid.")
-                color_print.error(resp.json())
-            resp.close()
+        # Spawns a thread to check the access token and update if necessary
+        if update_tokens_auto:
+            def checker():
+                while True:
+                    self.update_tokens()
+                    time.sleep(60)
+            threading.Thread(target=checker, daemon=True).start()
+        elif not self.verbose:
+            print("Warning: Tokens will not be updated automatically.")
 
-        if self._verbose:
-            color_print.info("Initialization Complete")
+        if self.verbose:
+            print("Initialization Complete")
 
-    def update_tokens(self):
+    def update_tokens(self, force=False):
         """
         Checks if tokens need to be updated and updates if needed (only access token is automatically updated)
+        :param force: force update of refresh token (also updates access token)
+        :type force: bool
         """
-        if (datetime.now() - self._refresh_token_issued).days >= (self._refresh_token_timeout - 1):  # check if we need to update refresh (and access) token
-            for i in range(3):  color_print.user("The refresh token has expired, please update!")
+        if (datetime.now() - self._refresh_token_issued).days >= (self._refresh_token_timeout - 1) or force:  # check if we need to update refresh (and access) token
+            print("The refresh token has expired, please update!")
             self._update_refresh_token()
         elif ((datetime.now() - self._access_token_issued).days >= 1) or (
                 (datetime.now() - self._access_token_issued).seconds > (self._access_token_timeout - 61)):  # check if we need to update access token
-            if self._verbose:
-                color_print.info("The access token has expired, updating automatically.")
+            if self.verbose: print("The access token has expired, updating automatically.")
             self._update_access_token()
-        # else: color_print.info("Token check passed")
 
     def update_tokens_auto(self):
-        """
-        Spawns a thread to check the access token and update if necessary
-        """
-        def checker():
-            import time
-            while True:
-                self.update_tokens()
-                time.sleep(60)
-
-        threading.Thread(target=checker, daemon=True).start()
+        import warnings
+        warnings.warn("update_tokens_auto() is deprecated and is now started when the client is created (if update_tokens_auto=True (default)).", DeprecationWarning, stacklevel=2)
 
     def _update_access_token(self):
         """
@@ -131,26 +136,24 @@ class Client:
                 self.refresh_token = new_td.get("refresh_token")
                 self.id_token = new_td.get("id_token")
                 self._write_tokens_file(self._access_token_issued, refresh_token_issued, new_td)
-                # show user that we have updated the access token
-                if self._verbose:
-                    color_print.info(f"Access token updated: {self._access_token_issued}")
+                if self.verbose: # show user that we have updated the access token
+                    print(f"Access token updated: {self._access_token_issued}")
                 break
             else:
-                color_print.error(f"Could not get new access token ({i+1} of 3).")
+                print(f"Could not get new access token ({i+1} of 3).")
+                time.sleep(10)
 
     def _update_refresh_token(self):
         """
         Get new access and refresh tokens using authorization code.
         """
-        import webbrowser
+        self.awaiting_input = True # set flag since we are waiting for user input
         # get authorization code (requires user to authorize)
-        color_print.user("Please authorize this program to access your schwab account.")
+        #print("Please authorize this program to access your schwab account.")
         auth_url = f'https://api.schwabapi.com/v1/oauth/authorize?client_id={self._app_key}&redirect_uri={self._callback_url}'
-        color_print.user(f"Click to authenticate: {auth_url}")
-        color_print.user("Opening browser...")
+        print(f"Open to authenticate: {auth_url}")
         webbrowser.open(auth_url)
-        response_url = color_print.user_input(
-            "After authorizing, wait for it to load (<1min) and paste the WHOLE url here: ")
+        response_url = input("After authorizing, paste the address bar url here: ")
         code = f"{response_url[response_url.index('code=') + 5:response_url.index('%40')]}@"  # session = responseURL[responseURL.index("session=")+8:]
         # get new access and refresh tokens
         response = self._post_oauth_token('authorization_code', code)
@@ -160,17 +163,24 @@ class Client:
             new_td = response.json()
             self.access_token = new_td.get("access_token")
             self.refresh_token = new_td.get("refresh_token")
+            self.awaiting_input = False  # reset flag since tokens have been updated
             self.id_token = new_td.get("id_token")
             self._write_tokens_file(self._access_token_issued, self._refresh_token_issued, new_td)
-            color_print.info("Refresh and Access tokens updated")
+            if self.verbose: print("Refresh and Access tokens updated")
         else:
-            color_print.error("Could not get new refresh and access tokens, check these:\n    1. App status is "
-                              "\"Ready For Use\".\n    2. App key and app secret are valid.\n    3. You pasted the "
-                              "whole url within 30 seconds. (it has a quick expiration)")
+            print("Could not get new refresh and access tokens, check these:\n    1. App status is "
+                  "\"Ready For Use\".\n    2. App key and app secret are valid.\n    3. You pasted the "
+                  "whole url within 30 seconds. (it has a quick expiration)")
 
     def _post_oauth_token(self, grant_type, code):
         """
         Makes API calls for auth code and refresh tokens
+        :param grant_type: 'authorization_code' or 'refresh_token'
+        :type grant_type: str
+        :param code: authorization code
+        :type code: str
+        :return: response
+        :rtype: requests.Response
         """
         headers = {
             'Authorization': f'Basic {base64.b64encode(bytes(f"{self._app_key}:{self._app_secret}", "utf-8")).decode("utf-8")}',
@@ -181,28 +191,27 @@ class Client:
         elif grant_type == 'refresh_token':  # refreshes the access token
             data = {'grant_type': 'refresh_token', 'refresh_token': code}
         else:
-            color_print.error("Invalid grant type")
-            return None
+            raise Exception("Invalid grant type; options are 'authorization_code' or 'refresh_token'")
         return requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data)
 
-    def _write_tokens_file(self, atIssued, rtIssued, tokenDictionary):
+    def _write_tokens_file(self, at_issued, rt_issued, token_dictionary):
         """
         Writes token file
-        :param atIssued: access token issued
-        :type atIssued: datetime
-        :param rtIssued: refresh token issued
-        :type rtIssued: datetime
-        :param tokenDictionary: token dictionary
-        :type tokenDictionary: dict
+        :param at_issued: access token issued
+        :type at_issued: datetime
+        :param rt_issued: refresh token issued
+        :type rt_issued: datetime
+        :param token_dictionary: token dictionary
+        :type token_dictionary: dict
         """
         try:
             with open(self._tokens_file, 'w') as f:
-                toWrite = {"access_token_issued": atIssued.isoformat(), "refresh_token_issued": rtIssued.isoformat(),
-                           "token_dictionary": tokenDictionary}
+                toWrite = {"access_token_issued": at_issued.isoformat(), "refresh_token_issued": rt_issued.isoformat(),
+                           "token_dictionary": token_dictionary}
                 json.dump(toWrite, f, ensure_ascii=False, indent=4)
                 f.flush()
         except Exception as e:
-            color_print.error(e)
+            print(e)
 
 
     def _read_tokens_file(self):
@@ -216,7 +225,7 @@ class Client:
                 d = json.load(f)
                 return datetime.fromisoformat(d.get("access_token_issued")), datetime.fromisoformat(d.get("refresh_token_issued")), d.get("token_dictionary")
         except Exception as e:
-            color_print.error(e)
+            print(e)
             return None, None, None
 
     def _params_parser(self, params):
@@ -511,7 +520,6 @@ class Client:
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
-    # get option chains for a ticker
     def option_chains(self, symbol, contractType=None, strikeCount=None, includeUnderlyingQuote=None, strategy=None,
                interval=None, strike=None, range=None, fromDate=None, toDate=None, volatility=None, underlyingPrice=None,
                interestRate=None, daysToExpiration=None, expMonth=None, optionType=None, entitlement=None):
@@ -565,7 +573,6 @@ class Client:
                                  'expMonth': expMonth, 'optionType': optionType, 'entitlement': entitlement}),
                             timeout=self.timeout)
 
-    # get an option expiration chain for a ticker
     def option_expiration_chain(self, symbol):
         """
         Get an option expiration chain for a ticker
@@ -579,7 +586,6 @@ class Client:
                             params=self._params_parser({'symbol': symbol}),
                             timeout=self.timeout)
 
-    # get price history for a ticker
     def price_history(self, symbol, periodType=None, period=None, frequencyType=None, frequency=None, startDate=None,
                       endDate=None, needExtendedHoursData=None, needPreviousClose=None):
         """
@@ -615,7 +621,6 @@ class Client:
                                                         'needPreviousClose': needPreviousClose}),
                             timeout=self.timeout)
 
-    # get movers in a specific index and direction
     def movers(self, symbol, sort=None, frequency=None):
         """
         Get movers in a specific index and direction
@@ -633,7 +638,6 @@ class Client:
                             params=self._params_parser({'sort': sort, 'frequency': frequency}),
                             timeout=self.timeout)
 
-    # get market hours for a list of markets
     def market_hours(self, symbols, date=None):
         """
         Get Market Hours for dates in the future across different markets.
@@ -651,7 +655,6 @@ class Client:
                                  'date': self._time_convert(date, 'YYYY-MM-DD')}),
                             timeout=self.timeout)
 
-    # get market hours for a single market
     def market_hour(self, market_id, date=None):
         """
         Get Market Hours for dates in the future for a single market.
@@ -667,7 +670,6 @@ class Client:
                             params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
                             timeout=self.timeout)
 
-    # get instruments for a list of symbols
     def instruments(self, symbol, projection):
         """
         Get instruments for a list of symbols
@@ -683,7 +685,6 @@ class Client:
                             params={'symbol': symbol, 'projection': projection},
                             timeout=self.timeout)
 
-    # get instruments for a single cusip
     def instrument_cusip(self, cusip_id):
         """
         Get instrument for a single cusip

@@ -15,8 +15,7 @@ This is an unofficial python program to access the Schwab api.
 2. Install packages
    - Install schwabdev and requirements `pip install schwabdev requests websockets`
    - *You may need to use `pip3` instead of `pip`*
-   - If using MacOS you need to run the python certificates installer.
-3. Examples on how to use the client are in `examples/api_demo.py` | `examples/stream_demo.py` (add your keys in the .env file)  
+3. Examples on how to use the client are in the `examples/` folder (add your keys in the .env file)  
    - The first time you run you will have to sign in to your Schwab account using the generated link in the terminal. After signing in, agree to the terms, and select account(s). Then you will have to copy the link in the address bar and paste it into the terminal. 
    - Questions? - join the [Discord group](https://discord.gg/m7SSjr9rs9).  
 ```py
@@ -24,31 +23,26 @@ import schwabdev #import the package
 
 client = schwabdev.Client('Your app key', 'Your app secret')  #create a client
 
-client.update_tokens_auto() #start the auto access token updater
-
 print(client.account_linked().json()) #make api calls
 ```
 
 ## What can this program do?
  - Authenticate and access the api 
+ - Auto "access token" updates.
  - Functions for all api functions (examples in `examples/api_demo.py`)
- - Auto "access token" updates (`client.update_tokens_auto()`)
- - Stream real-time data with customizable response handler (examples in `examples/stream_demo.py`)
+ - Stream real-time data with a customizable response handler (examples in `examples/stream_demo.py`)
  ### TBD 
  - Automatic refresh token updates. (Waiting for Schwab implementation)
-
-## Notes
-
+### Notes
 The schwabdev folder contains code for main operations:     
  - `api.py` contains functions relating to api calls, requests, and automatic token checker threads.
  - `stream.py` contains functions for streaming data from websockets.
- - `color_print.py` contains functions to print to the terminal with color.
 
 ## Youtube Tutorials
 1. [Authentication and Requests](https://www.youtube.com/watch?v=kHbom0KIJwc&ab_channel=TylerBowers) *Github code has significantly changed since this video*
 2. [Streaming Real-time Data](https://www.youtube.com/watch?v=t7F2dUecgWc&list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8&index=2&ab_channel=TylerBowers)
 
-## License (MIT)
+## MIT License
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

@@ -8,15 +8,14 @@ def main():
     load_dotenv()  # load environment variables from .env file
 
     client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'))
-    client.update_tokens_auto()  # update tokens automatically (except refresh token)
+    streamer = client.stream
 
     # a "terminal emulator" to play with the API
     history = []
-    print("\nTerminal emulator")
-    print("Enter code to execute.")
+    print("\nTerminal emulator - enter python code to execute.")
     while True:
         try:
-            entered = input("Enter something to execute:\n")
+            entered = input(">")
             if entered == "":
                 print(history[-1])
                 exec(history[-1])
@@ -24,9 +23,9 @@ def main():
             else:
                 exec(entered)
                 history.append(entered)
-            print(" ^^^^[succeeded]^^^^ ")
+            print(" ^^^^[Succeeded]^^^^ ")
         except Exception as error:
-            print(" ^^^^[ERROR]^^^^ ")
+            print(" ^^^^^^[ERROR]^^^^^^ ")
             print(error)
 
 
