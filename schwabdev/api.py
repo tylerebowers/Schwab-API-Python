@@ -367,7 +367,7 @@ class Client:
         :param accountHash: account hash from account_linked()
         :type accountHash: str
         :param orderId: order id
-        :type orderId: str
+        :type orderId: str|int
         :return: order details
         :rtype: request.Response
         """
@@ -381,7 +381,7 @@ class Client:
         :param accountHash: account hash from account_linked()
         :type accountHash: str
         :param orderId: order id
-        :type orderId: str
+        :type orderId: str|int
         :return: response code
         :rtype: request.Response
         """
@@ -395,7 +395,7 @@ class Client:
         :param accountHash: account hash from account_linked()
         :type accountHash: str
         :param orderId: order id
-        :type orderId: str
+        :type orderId: str|int
         :param order: order dictionary, examples in Schwab docs
         :type order: dict
         :return: response code
@@ -464,7 +464,7 @@ class Client:
         :param accountHash: account hash number
         :type accountHash: str
         :param transactionId: transaction id
-        :type transactionId: int
+        :type transactionId: str|int
         :return: transaction details of transaction id using accountHash
         :rtype: request.Response
         """
@@ -689,7 +689,7 @@ class Client:
         """
         Get instrument for a single cusip
         :param cusip_id: cusip id
-        :type cusip_id: str
+        :type cusip_id: str|int
         :return: instrument
         :rtype: request.Response
         """

@@ -9,7 +9,7 @@ client = schwabdev.Client(...)
 streamer = client.stream
 ```
 ### Starting the stream
-To start the streamer you simply call `streamer.start()`, however will need a response handler to do something useful, see below. The stream will close after ~30 seconds if there are no subscriptions.
+To start the streamer you simply call `streamer.start()`, however you will need a response handler to do something useful, see below. The stream will close after ~30 seconds if there are no subscriptions.
 ### Using your own response handler
 In typical applications you will want to use a seperate response handler that parses received data from the stream. The default method just prints to the terminal. 
 ```py
@@ -17,7 +17,7 @@ def my_handler(message):
         print("TEST" + message)
 streamer.start(my_handler)
 ```
-In the above example, the `my_handler` function is called whenever a response is received from the stream, and prints "TEST" prefixed with the response to the terminal. It is important to code this function such that it is not too taxing on the system as we dont want the stream to run behind. You can also pass in variables, args and/or kwargs, into the start function which will be passed to the `my_handler` function.  
+In the above example, the `my_handler` function is called whenever a response is received from the stream, and prints "TEST" prefixed with the response to the terminal. It is important to code this function such that it is not too taxing on the system as we dont want the response handler to run behind the streamer. You can also pass in variables, args and/or kwargs, into the start function which will be passed to the `my_handler` function.  
 ### Starting the stream automatically
 If you want to start the streamer automatically when the market opens then instead of `streamer.start()` use the call `streamer.start_automatic(receiver=print, after_hours=False, pre_hours=False)`, shown are the default values. If you want to stream after or pre-markt hours then set the respective variables. Starting the stream automatically will preserve the previous subscriptions.
 ### Stopping the stream

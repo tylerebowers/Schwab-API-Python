@@ -6,9 +6,9 @@ You can also reference the [schwab documentation](https://developer.schwab.com/p
 ### Notes:
 * In order to use all api calls you must have both "APIs" added to your app, both "Accounts and Trading Production" and "Market Data Production"
 * After making a call you will recive a response object, to get the data you can call .json(), however it is best to check if the response is good by calling .ok which returns a boolean of True if the response code is in the 200 range.
-* In the documentation parameters with =None are optional and can be left blank.
+* In this documentation, parameters with ...=None are optional and can be left blank.
 * All time/dates can either be strings or datetime objects.
-* All lists can be passed as comma separated strings or lists of strings.
+* All lists can be passed as comma strings "a,b,c" or lists of strings ["a", "b", "c"].
 
 ## API Calls
 

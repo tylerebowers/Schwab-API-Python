@@ -11,21 +11,14 @@ def main():
     streamer = client.stream
 
     # a "terminal emulator" to play with the API
-    history = []
     print("\nTerminal emulator - enter python code to execute.")
     while True:
         try:
             entered = input(">")
-            if entered == "":
-                print(history[-1])
-                exec(history[-1])
-                history.append(history[-1])
-            else:
-                exec(entered)
-                history.append(entered)
-            print(" ^^^^[Succeeded]^^^^ ")
+            exec(entered)
+            print("[Succeeded]")
         except Exception as error:
-            print(" ^^^^^^[ERROR]^^^^^^ ")
+            print("[ERROR]")
             print(error)
 
 
