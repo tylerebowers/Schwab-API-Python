@@ -170,7 +170,7 @@ Listed below are the shortcut functions for all streamable assets.
 >> Frequency: 0 (all day), 1, 5, 10, 30 60  
 
 ### Screener options  
-> `streamer.send(streamer.screener_options(keys, fields))`  
+> `streamer.send(streamer.screener_option(keys, fields))`  
 > Key examples: "OPTION_PUT_PERCENT_CHANGE_UP_60", "OPTION_CALL_TRADES_30"
 >> Key format: `(PREFIX)_(SORTFIELD)_(FREQUENCY)`   
 >> Prefix: OPTION_PUT, OPTION_CALL, OPTION_ALL  
