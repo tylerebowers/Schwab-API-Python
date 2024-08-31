@@ -12,16 +12,16 @@ def main():
     # define a variable for the steamer:
     streamer = client.stream
 
-    """
+
     # example of using your own response handler, prints to main terminal.
     # the first parameter is used by the stream, additional parameters are passed to the handler
     def my_handler(message):
         print("test_handler:" + message)
     streamer.start(my_handler)
-    """
+
 
     # start steamer with default response handler (print):
-    streamer.start()
+    #streamer.start()
 
     """
     You can stream up to 500 keys.

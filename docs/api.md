@@ -55,7 +55,7 @@ You can also reference the [schwab documentation](https://developer.schwab.com/p
 > Returns(request.Response):  Response object.  
 >> Get the order id by checking the headers.  
 >> `order_id = resp.headers.get('location', '/').split('/')[-1]`  
->> If order is immediately filled then the id might not be returned
+>> *If order is immediately filled then the id might not be returned*
 
 ### Get specific order details
 > Syntax: `print(client.order_details(account_hash, order_id)`  
@@ -64,7 +64,7 @@ You can also reference the [schwab documentation](https://developer.schwab.com/p
 > 
 > Returns(request.Response):  Details of the order.
 
-### Cancel specific order
+### Cancel a specific order
 > Syntax: `client.order_cancel(account_hash, order_id)`  
 > * Param account_hash(str): account hash that order was placed on.  
 > * Param order_id(int): order id to cancel.  
@@ -196,7 +196,7 @@ You can also reference the [schwab documentation](https://developer.schwab.com/p
 > Syntax: `client.movers(symbol, sort=None, frequency=None)`
 > * Param symbol(str): index symbol to get movers for. Options: $DJI, $COMPX, $SPX, NYSE, NASDAQ, OTCBB, INDEX_ALL, EQUITY_ALL, OPTION_ALL, OPTION_PUT, OPTION_CALL
 > * Param sort(str): sort to get movers for. Options: VOLUME, TRADES, PERCENT_CHANGE_UP, PERCENT_CHANGE_DOWN   
-> * Param frequency(int): frequency to get movers for. Options: 0(default), 1, 5, 10, 30, 60
+> * Param frequency(int): specified direction up or down. Options: 0(default), 1, 5, 10, 30, 60
 > 
 > Returns(request.Response):  A list of movers.
 

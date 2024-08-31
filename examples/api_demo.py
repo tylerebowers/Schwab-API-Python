@@ -71,7 +71,7 @@ def main():
     print(
         "|\n|client.account_orders_all(datetime.utcnow() - timedelta(days=30), datetime.utcnow()).json()",
         end="\n|")
-    print(client.account_orders_all( datetime.utcnow() - timedelta(days=30), datetime.utcnow()).json())
+    print(client.account_orders_all(datetime.utcnow() - timedelta(days=30), datetime.utcnow()).json())
     sleep(3)
 
     # preview order (not implemented by Schwab yet)

@@ -32,6 +32,7 @@ print(client.account_linked().json()) #make api calls
  - Functions for all api functions (examples in `examples/api_demo.py`)
  - Stream real-time data with a customizable response handler (examples in `examples/stream_demo.py`)
  ### TBD 
+ - Paper trading client
  - Automatic refresh token updates. (Waiting for Schwab implementation)
 ### Notes
 The schwabdev folder contains code for main operations:     

@@ -1,14 +1,37 @@
 
 # Placing Orders
 After making a client object i.e. `client = schwabdev.Client(...)` we can place orders using the `client.order_place(...)` method.
+### Place an order 
 > Syntax: `client.order_place(account_hash, order)`  
 > * Param account_hash(str): account hash to get place order on.  
-> * Param order(dict): Order dict to place, there are examples below and in the Schwab documentation. 
+> * Param order(dict): Order dict to place, there are examples in below and in the Schwab documentation. 
 > 
 > Returns(request.Response):  Response object.  
 >> Get the order id by checking the headers.  
->> `order_id = resp.headers.get('location', '/').split('/')[-1]`  
+>> `order_id = response.headers.get('location', '/').split('/')[-1]`  
 >> *If order is immediately filled then the id might not be returned*
+
+### Get specific order details
+> Syntax: `print(client.order_details(account_hash, order_id)`  
+> * Param account_hash(str): account hash that order was placed on.  
+> * Param order_id(int): order id to get details of.
+> 
+> Returns(request.Response):  Details of the order.
+
+### Cancel a specific order
+> Syntax: `client.order_cancel(account_hash, order_id)`  
+> * Param account_hash(str): account hash that order was placed on.  
+> * Param order_id(int): order id to cancel.  
+> 
+> Returns(request.Response): Empty if successful.  
+
+### Replace a specific order
+> Syntax: `client.order_replace(account_hash, orderID, order)`  
+> * Param account_hash(str): account hash that order was placed on.  
+> * Param orderID(int): order id to be replace.  
+> * Param order(dict): Order dict to replace orderID with.   
+> 
+> Returns(request.Response):  Empty if successful.  
 
 ## Order Examples
 *Please adjust for your usage.*

@@ -140,6 +140,7 @@ class Client:
                     print(f"Access token updated: {self._access_token_issued}")
                 break
             else:
+                print(response.text)
                 print(f"Could not get new access token ({i+1} of 3).")
                 time.sleep(10)
 
@@ -168,6 +169,7 @@ class Client:
             self._write_tokens_file(self._access_token_issued, self._refresh_token_issued, new_td)
             if self.verbose: print("Refresh and Access tokens updated")
         else:
+            print(response.text)
             print("Could not get new refresh and access tokens, check these:\n    1. App status is "
                   "\"Ready For Use\".\n    2. App key and app secret are valid.\n    3. You pasted the "
                   "whole url within 30 seconds. (it has a quick expiration)")
@@ -634,7 +636,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/movers/{symbol}',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={"accept": "application/json", 'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'sort': sort, 'frequency': frequency}),
                             timeout=self.timeout)
 
