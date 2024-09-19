@@ -7,7 +7,7 @@ def main():
     # place your app key and app secret in the .env file
     load_dotenv()  # load environment variables from .env file
 
-    client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'))
+    client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'), verbose=True)
 
     # define a variable for the steamer:
     streamer = client.stream

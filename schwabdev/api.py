@@ -1,13 +1,12 @@
 import json
 import time
 import base64
+import datetime
 import requests
 import threading
 import webbrowser
 import urllib.parse
 from .stream import Stream
-from datetime import datetime
-
 
 class Client:
 
@@ -75,8 +74,8 @@ class Client:
             self._access_token_issued = at_issued
             self._refresh_token_issued = rt_issued
             if self.verbose:
-                print(self._access_token_issued.strftime("Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.now() - self._access_token_issued).seconds} seconds)")
-                print(self._refresh_token_issued.strftime("Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.now() - self._refresh_token_issued).days} days)")
+                print(self._access_token_issued.strftime("Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).seconds} seconds)")
+                print(self._refresh_token_issued.strftime("Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).days} days)")
             # check if tokens need to be updated and update if needed
             self.update_tokens()
         else:
@@ -98,7 +97,7 @@ class Client:
             print("Warning: Tokens will not be updated automatically.")
 
         if self.verbose:
-            print("Initialization Complete")
+            print("Schwabdev Client Initialization Complete")
 
     def update_tokens(self, force=False):
         """
@@ -106,11 +105,11 @@ class Client:
         :param force: force update of refresh token (also updates access token)
         :type force: bool
         """
-        if (datetime.now() - self._refresh_token_issued).days >= (self._refresh_token_timeout - 1) or force:  # check if we need to update refresh (and access) token
+        if (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).days >= (self._refresh_token_timeout - 1) or force:  # check if we need to update refresh (and access) token
             print("The refresh token has expired, please update!")
             self._update_refresh_token()
-        elif ((datetime.now() - self._access_token_issued).days >= 1) or (
-                (datetime.now() - self._access_token_issued).seconds > (self._access_token_timeout - 61)):  # check if we need to update access token
+        elif ((datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).days >= 1) or (
+                (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).seconds > (self._access_token_timeout - 61)):  # check if we need to update access token
             if self.verbose: print("The access token has expired, updating automatically.")
             self._update_access_token()
 
@@ -129,7 +128,7 @@ class Client:
             response = self._post_oauth_token('refresh_token', token_dictionary_old.get("refresh_token"))
             if response.ok:
                 # get and update to the new access token
-                self._access_token_issued = datetime.now()
+                self._access_token_issued = datetime.datetime.now(datetime.timezone.utc)
                 self._refresh_token_issued = refresh_token_issued
                 new_td = response.json()
                 self.access_token = new_td.get("access_token")
@@ -160,7 +159,7 @@ class Client:
         response = self._post_oauth_token('authorization_code', code)
         if response.ok:
             # update token file and variables
-            self._access_token_issued = self._refresh_token_issued = datetime.now()
+            self._access_token_issued = self._refresh_token_issued = datetime.datetime.now(datetime.timezone.utc)
             new_td = response.json()
             self.access_token = new_td.get("access_token")
             self.refresh_token = new_td.get("refresh_token")
@@ -200,9 +199,9 @@ class Client:
         """
         Writes token file
         :param at_issued: access token issued
-        :type at_issued: datetime
+        :type at_issued: datetime.pyi
         :param rt_issued: refresh token issued
-        :type rt_issued: datetime
+        :type rt_issued: datetime.pyi
         :param token_dictionary: token dictionary
         :type token_dictionary: dict
         """
@@ -220,12 +219,12 @@ class Client:
         """
         Reads token file
         :return: access token issued, refresh token issued, token dictionary
-        :rtype: datetime, datetime, dict
+        :rtype: datetime.pyi, datetime.pyi, dict
         """
         try:
             with open(self._tokens_file, 'r') as f:
                 d = json.load(f)
-                return datetime.fromisoformat(d.get("access_token_issued")), datetime.fromisoformat(d.get("refresh_token_issued")), d.get("token_dictionary")
+                return datetime.datetime.fromisoformat(d.get("access_token_issued")), datetime.datetime.fromisoformat(d.get("refresh_token_issued")), d.get("token_dictionary")
         except Exception as e:
             print(e)
             return None, None, None
@@ -245,8 +244,8 @@ class Client:
     def _time_convert(self, dt=None, form="8601"):
         """
         Convert time to the correct format, passthrough if a string, preserve None if None for params parser
-        :param dt: datetime object to convert
-        :type dt: datetime
+        :param dt: datetime.pyi object to convert
+        :type dt: datetime.pyi
         :param form: what to convert input to
         :type form: str
         :return: converted time or passthrough
@@ -255,7 +254,7 @@ class Client:
         if dt is None or isinstance(dt, str):
             return dt
         elif form == "8601":  # assume datetime object from here on
-            return f'{dt.isoformat()[:-3]}Z'
+            return f'{dt.isoformat()[:-9]}Z'
         elif form == "epoch":
             return int(dt.timestamp())
         elif form == "epoch_ms":
@@ -265,7 +264,7 @@ class Client:
         else:
             return dt
 
-    def _format_list(self, l):
+    def _format_list(self, l: list | str | None):
         """
         Convert python list to string or passthough if already a string i.e ["a", "b"] -> "a,b"
         :param l: list to convert
@@ -286,7 +285,7 @@ class Client:
     Accounts and Trading Production
     """
 
-    def account_linked(self):
+    def account_linked(self) -> requests.Response:
         """
         Account numbers in plain text cannot be used outside of headers or request/response bodies. As the first step consumers must invoke this service to retrieve the list of plain text/encrypted value pairs, and use encrypted account values for all subsequent calls for any accountNumber request.
         :return: All linked account numbers and hashes
@@ -296,7 +295,7 @@ class Client:
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             timeout=self.timeout)
 
-    def account_details_all(self, fields=None):
+    def account_details_all(self, fields=None) -> requests.Response:
         """
         All the linked account information for the user logged in. The balances on these accounts are displayed by default however the positions on these accounts will be displayed based on the "positions" flag.
         :param fields: fields to return (options: "positions")
@@ -309,7 +308,7 @@ class Client:
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
-    def account_details(self, accountHash, fields=None):
+    def account_details(self, accountHash: str, fields=None) -> requests.Response:
         """
         Specific account information with balances and positions. The balance information on these accounts is displayed by default but Positions will be returned based on the "positions" flag.
         :param accountHash: account hash from account_linked()
@@ -324,15 +323,15 @@ class Client:
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
-    def account_orders(self, accountHash, fromEnteredTime, toEnteredTime, maxResults=None, status=None):
+    def account_orders(self, accountHash: str, fromEnteredTime: 'datetime | str', toEnteredTime: 'datetime | str', maxResults=None, status=None) -> requests.Response:
         """
         All orders for a specific account. Orders retrieved can be filtered based on input parameters below. Maximum date range is 1 year.
         :param accountHash: account hash from account_linked()
         :type accountHash: str
         :param fromEnteredTime: from entered time
-        :type fromEnteredTime: datetime | str
+        :type fromEnteredTime: datetime.pyi | str
         :param toEnteredTime: to entered time
-        :type toEnteredTime: datetime | str
+        :type toEnteredTime: datetime.pyi | str
         :param maxResults: maximum number of results
         :type maxResults: int
         :param status: status ("AWAITING_PARENT_ORDER"|"AWAITING_CONDITION"|"AWAITING_STOP_CONDITION"|"AWAITING_MANUAL_REVIEW"|"ACCEPTED"|"AWAITING_UR_OUT"|"PENDING_ACTIVATION"|"QUEUED"|"WORKING"|"REJECTED"|"PENDING_CANCEL"|"CANCELED"|"PENDING_REPLACE"|"REPLACED"|"FILLED"|"EXPIRED"|"NEW"|"AWAITING_RELEASE_TIME"|"PENDING_ACKNOWLEDGEMENT"|"PENDING_RECALL"|"UNKNOWN")
@@ -347,7 +346,7 @@ class Client:
                                  'toEnteredTime': self._time_convert(toEnteredTime, "8601"), 'status': status}),
                             timeout=self.timeout)
 
-    def order_place(self, accountHash, order):
+    def order_place(self, accountHash: str, order: dict) -> requests.Response:
         """
         Place an order for a specific account.
         :param accountHash: account hash from account_linked()
@@ -363,13 +362,13 @@ class Client:
                              json=order,
                              timeout=self.timeout)
 
-    def order_details(self, accountHash, orderId):
+    def order_details(self, accountHash:str, orderId: int | str) -> requests.Response:
         """
         Get a specific order by its ID, for a specific account
         :param accountHash: account hash from account_linked()
         :type accountHash: str
         :param orderId: order id
-        :type orderId: str|int
+        :type orderId: int | str
         :return: order details
         :rtype: request.Response
         """
@@ -377,7 +376,7 @@ class Client:
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             timeout=self.timeout)
 
-    def order_cancel(self, accountHash, orderId):
+    def order_cancel(self, accountHash: str, orderId: int | str) -> requests.Response:
         """
         Cancel a specific order by its ID, for a specific account
         :param accountHash: account hash from account_linked()
@@ -391,7 +390,7 @@ class Client:
                                headers={'Authorization': f'Bearer {self.access_token}'},
                                timeout=self.timeout)
 
-    def order_replace(self, accountHash, orderId, order):
+    def order_replace(self, accountHash: str, orderId: int | str, order: dict) -> requests.Response:
         """
         Replace an existing order for an account. The existing order will be replaced by the new order. Once replaced, the old order will be canceled and a new order will be created.
         :param accountHash: account hash from account_linked()
@@ -409,13 +408,13 @@ class Client:
                             json=order,
                             timeout=self.timeout)
 
-    def account_orders_all(self, fromEnteredTime, toEnteredTime, maxResults=None, status=None):
+    def account_orders_all(self, fromEnteredTime: 'datetime | str', toEnteredTime: 'datetime | str', maxResults=None, status=None) -> requests.Response:
         """
         Get all orders for all accounts
         :param fromEnteredTime: start date
-        :type fromEnteredTime: datetime | str
+        :type fromEnteredTime: datetime.pyi | str
         :param toEnteredTime: end date
-        :type toEnteredTime: datetime | str
+        :type toEnteredTime: datetime.pyi | str
         :param maxResults: maximum number of results (set to None for default 3000)
         :type maxResults: int
         :param status: status ("AWAITING_PARENT_ORDER"|"AWAITING_CONDITION"|"AWAITING_STOP_CONDITION"|"AWAITING_MANUAL_REVIEW"|"ACCEPTED"|"AWAITING_UR_OUT"|"PENDING_ACTIVATION"|"QUEUED"|"WORKING"|"REJECTED"|"PENDING_CANCEL"|"CANCELED"|"PENDING_REPLACE"|"REPLACED"|"FILLED"|"EXPIRED"|"NEW"|"AWAITING_RELEASE_TIME"|"PENDING_ACKNOWLEDGEMENT"|"PENDING_RECALL"|"UNKNOWN")
@@ -431,22 +430,22 @@ class Client:
                             timeout=self.timeout)
 
     """
-    def order_preview(self, accountHash, orderObject):
+    def order_preview(self, accountHash, orderObject) -> requests.Response:
         #COMING SOON (waiting on Schwab)
         return requests.post(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/previewOrder',
                              headers={'Authorization': f'Bearer {self.access_token}',
                                       "Content-Type": "application.json"}, data=orderObject)
     """
 
-    def transactions(self, accountHash, startDate, endDate, types, symbol=None):
+    def transactions(self, accountHash: str, startDate: 'datetime | str', endDate: 'datetime | str', types: str, symbol=None) -> requests.Response:
         """
         All transactions for a specific account. Maximum number of transactions in response is 3000. Maximum date range is 1 year.
         :param accountHash: account hash number
         :type accountHash: str
         :param startDate: start date
-        :type startDate: datetime | str
+        :type startDate: datetime.pyi | str
         :param endDate: end date
-        :type endDate: datetime | str
+        :type endDate: datetime.pyi | str
         :param types: transaction type ("TRADE, RECEIVE_AND_DELIVER, DIVIDEND_OR_INTEREST, ACH_RECEIPT, ACH_DISBURSEMENT, CASH_RECEIPT, CASH_DISBURSEMENT, ELECTRONIC_FUND, WIRE_OUT, WIRE_IN, JOURNAL, MEMORANDUM, MARGIN_CALL, MONEY_MARKET, SMA_ADJUSTMENT")
         :type types: str
         :param symbol: symbol
@@ -460,7 +459,7 @@ class Client:
                                  'endDate': self._time_convert(endDate, "8601"), 'symbol': symbol, 'types': types}),
                             timeout=self.timeout)
 
-    def transaction_details(self, accountHash, transactionId):
+    def transaction_details(self, accountHash: str, transactionId: str | int) -> requests.Response:
         """
         Get specific transaction information for a specific account
         :param accountHash: account hash number
@@ -475,7 +474,7 @@ class Client:
                             params={'accountNumber': accountHash, 'transactionId': transactionId},
                             timeout=self.timeout)
 
-    def preferences(self):
+    def preferences(self) -> requests.Response:
         """
         Get user preference information for the logged in user.
         :return: User Preferences and Streaming Info
@@ -489,7 +488,7 @@ class Client:
     Market Data
     """
     
-    def quotes(self, symbols=None, fields=None, indicative=False):
+    def quotes(self, symbols=None, fields=None, indicative=False) -> requests.Response:
         """
         Get quotes for a list of tickers
         :param symbols: list of symbols strings (e.g. "AMD,INTC" or ["AMD", "INTC"])
@@ -507,7 +506,7 @@ class Client:
                                 {'symbols': self._format_list(symbols), 'fields': fields, 'indicative': indicative}),
                             timeout=self.timeout)
 
-    def quote(self, symbol_id, fields=None):
+    def quote(self, symbol_id: str, fields=None) -> requests.Response:
         """
         Get quote for a single symbol
         :param symbol_id: ticker symbol
@@ -522,9 +521,9 @@ class Client:
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
-    def option_chains(self, symbol, contractType=None, strikeCount=None, includeUnderlyingQuote=None, strategy=None,
+    def option_chains(self, symbol: str, contractType=None, strikeCount=None, includeUnderlyingQuote=None, strategy=None,
                interval=None, strike=None, range=None, fromDate=None, toDate=None, volatility=None, underlyingPrice=None,
-               interestRate=None, daysToExpiration=None, expMonth=None, optionType=None, entitlement=None):
+               interestRate=None, daysToExpiration=None, expMonth=None, optionType=None, entitlement=None) -> requests.Response:
         """
         Get Option Chain including information on options contracts associated with each expiration for a ticker.
         :param symbol: ticker symbol
@@ -544,9 +543,9 @@ class Client:
         :param range: range ("ITM"|"NTM"|"OTM"...)
         :type range: str
         :param fromDate: from date
-        :type fromDate: datetime | str
+        :type fromDate: datetime.pyi | str
         :param toDate: to date
-        :type toDate: datetime | str
+        :type toDate: datetime.pyi | str
         :param volatility: volatility
         :type volatility: float
         :param underlyingPrice: underlying price
@@ -575,7 +574,7 @@ class Client:
                                  'expMonth': expMonth, 'optionType': optionType, 'entitlement': entitlement}),
                             timeout=self.timeout)
 
-    def option_expiration_chain(self, symbol):
+    def option_expiration_chain(self, symbol: str) -> requests.Response:
         """
         Get an option expiration chain for a ticker
         :param symbol: ticker symbol
@@ -588,8 +587,8 @@ class Client:
                             params=self._params_parser({'symbol': symbol}),
                             timeout=self.timeout)
 
-    def price_history(self, symbol, periodType=None, period=None, frequencyType=None, frequency=None, startDate=None,
-                      endDate=None, needExtendedHoursData=None, needPreviousClose=None):
+    def price_history(self, symbol: str, periodType=None, period=None, frequencyType=None, frequency=None, startDate=None,
+                      endDate=None, needExtendedHoursData=None, needPreviousClose=None) -> requests.Response:
         """
         Get price history for a ticker
         :param symbol: ticker symbol
@@ -603,9 +602,9 @@ class Client:
         :param frequency: frequency (1|5|10|15|30)
         :type frequency: int
         :param startDate: start date
-        :type startDate: datetime | str
+        :type startDate: datetime.pyi | str
         :param endDate: end date
-        :type endDate: datetime | str
+        :type endDate: datetime.pyi | str
         :param needExtendedHoursData: need extended hours data (True|False)
         :type needExtendedHoursData: boolean
         :param needPreviousClose: need previous close (True|False)
@@ -623,7 +622,7 @@ class Client:
                                                         'needPreviousClose': needPreviousClose}),
                             timeout=self.timeout)
 
-    def movers(self, symbol, sort=None, frequency=None):
+    def movers(self, symbol: str, sort=None, frequency=None) -> requests.Response:
         """
         Get movers in a specific index and direction
         :param symbol: symbol ("$DJI"|"$COMPX"|"$SPX"|"NYSE"|"NASDAQ"|"OTCBB"|"INDEX_ALL"|"EQUITY_ALL"|"OPTION_ALL"|"OPTION_PUT"|"OPTION_CALL")
@@ -640,13 +639,13 @@ class Client:
                             params=self._params_parser({'sort': sort, 'frequency': frequency}),
                             timeout=self.timeout)
 
-    def market_hours(self, symbols, date=None):
+    def market_hours(self, symbols, date=None) -> requests.Response:
         """
         Get Market Hours for dates in the future across different markets.
         :param symbols: list of market symbols ("equity", "option", "bond", "future", "forex")
         :type symbols: list
         :param date: date
-        :type date: datetime | str
+        :type date: datetime.pyi | str
         :return: market hours
         :rtype: request.Response
         """
@@ -657,13 +656,13 @@ class Client:
                                  'date': self._time_convert(date, 'YYYY-MM-DD')}),
                             timeout=self.timeout)
 
-    def market_hour(self, market_id, date=None):
+    def market_hour(self, market_id: str, date=None) -> requests.Response:
         """
         Get Market Hours for dates in the future for a single market.
         :param market_id: market id ("equity"|"option"|"bond"|"future"|"forex")
         :type market_id: str
         :param date: date
-        :type date: datetime | str
+        :type date: datetime.pyi | str
         :return: market hours
         :rtype: request.Response
         """
@@ -672,7 +671,7 @@ class Client:
                             params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
                             timeout=self.timeout)
 
-    def instruments(self, symbol, projection):
+    def instruments(self, symbol: str, projection) -> requests.Response:
         """
         Get instruments for a list of symbols
         :param symbol: symbol
@@ -687,7 +686,7 @@ class Client:
                             params={'symbol': symbol, 'projection': projection},
                             timeout=self.timeout)
 
-    def instrument_cusip(self, cusip_id):
+    def instrument_cusip(self, cusip_id: str | int) -> requests.Response:
         """
         Get instrument for a single cusip
         :param cusip_id: cusip id
