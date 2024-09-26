@@ -23,13 +23,13 @@ def main():
     # start steamer with default response handler (print):
     #streamer.start()
 
-    """
-    You can stream up to 500 keys.
-    By default all shortcut requests (below) will be "ADD" commands meaning the list of symbols will be added/appended 
-    to current subscriptions for a particular service, however if you want to overwrite subscription (in a particular 
-    service) you can use the "SUBS" command. Unsubscribing uses the "UNSUBS" command. To change the list of fields use
-    the "VIEW" command.
-    """
+
+    # You can stream up to 500 keys.
+    # By default all shortcut requests (below) will be "ADD" commands meaning the list of symbols will be added/appended
+    # to current subscriptions for a particular service, however if you want to overwrite subscription (in a particular
+    # service) you can use the "SUBS" command. Unsubscribing uses the "UNSUBS" command. To change the list of fields use
+    # the "VIEW" command.
+
 
     # these three do the same thing
     # streamer.send(streamer.basic_request("LEVELONE_EQUITIES", "ADD", parameters={"keys": "AMD,INTC", "fields": "0,1,2,3,4,5,6,7,8"}))
@@ -68,8 +68,11 @@ def main():
     streamer.stop()
     # if you don't want to clear the subscriptions, set clear_subscriptions=False
     # streamer.stop(clear_subscriptions=False)
+    # then the next time you start the stream it will resubscribe to the previous subscriptions (except if program is restarted)
 
 
 if __name__ == '__main__':
-    print("Welcome to the unofficial Schwab interface!\nGithub: https://github.com/tylerebowers/Schwab-API-Python")
+    print("Welcome to The Unofficial Schwab Python Wrapper!")
+    print("Github: https://github.com/tylerebowers/Schwab-API-Python")
+    print("Streaming documentation: https://github.com/tylerebowers/Schwab-API-Python/blob/master/docs/stream.md")
     main()  # call the user code above

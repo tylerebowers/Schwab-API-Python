@@ -181,5 +181,8 @@ def main():
 
 
 if __name__ == '__main__':
-    print("Welcome to the unofficial Schwab wrapper!\nGithub: https://github.com/tylerebowers/Schwab-API-Python")
+    print("Welcome to The Unofficial Schwab Python Wrapper!")
+    print("Github: https://github.com/tylerebowers/Schwab-API-Python")
+    print("API documentation: https://github.com/tylerebowers/Schwab-API-Python/blob/master/docs/api.md")
+    print("Client documentation: https://github.com/tylerebowers/Schwab-API-Python/blob/master/docs/client.md")
     main()  # call the user code above

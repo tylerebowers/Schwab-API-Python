@@ -134,7 +134,7 @@ You can also reference the [schwab documentation](https://developer.schwab.com/p
 
 ### Get a single quote
 > Syntax: `client.quote(symbol_id, fields=None)`  
-> * Param symbol_id(str): symbol id to get quote for. i.e. "AAPL"  
+> * Param symbol_id(str): symbol id to get quote for. i.e. "AAPL"   (note: use client.quotes(...) for futures)
 > * Param fields(str): list of fields to get quote for. Options "all"(default), "quote", "fundamental"  
 > 
 > Returns(request.Response):  A quote dict.  

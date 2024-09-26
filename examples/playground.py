@@ -15,13 +15,12 @@ def main():
     while True:
         try:
             entered = input(">")
-            exec(entered)
-            print("[Succeeded]")
+            exec(entered.lstrip(">")) # remove leading ">" just in case user copy-pasted it.
         except Exception as error:
-            print("[ERROR]")
             print(error)
 
 
 if __name__ == '__main__':
-    print("Welcome to the unofficial Schwab interface!\nGithub: https://github.com/tylerebowers/Schwab-API-Python")
+    print("Welcome to The Unofficial Schwab Python Wrapper!")
+    print("Github: https://github.com/tylerebowers/Schwab-API-Python")
     main()  # call the user code above

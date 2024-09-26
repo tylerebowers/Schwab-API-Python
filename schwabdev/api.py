@@ -74,14 +74,14 @@ class Client:
             self._access_token_issued = at_issued
             self._refresh_token_issued = rt_issued
             if self.verbose:
-                print(self._access_token_issued.strftime("Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).seconds} seconds)")
-                print(self._refresh_token_issued.strftime("Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).days} days)")
+                print(self._access_token_issued.strftime("[Schwabdev] Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).seconds} seconds)")
+                print(self._refresh_token_issued.strftime("[Schwabdev] Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).days} days)")
             # check if tokens need to be updated and update if needed
             self.update_tokens()
         else:
             # The tokens file doesn't exist, so create it.
             if self.verbose:
-                print(f"Token file does not exist or invalid formatting, creating \"{str(tokens_file)}\"")
+                print(f"[Schwabdev] Token file does not exist or invalid formatting, creating \"{str(tokens_file)}\"")
             open(self._tokens_file, 'w').close()
             # Tokens must be updated.
             self._update_refresh_token()
@@ -91,13 +91,13 @@ class Client:
             def checker():
                 while True:
                     self.update_tokens()
-                    time.sleep(60)
+                    time.sleep(30)
             threading.Thread(target=checker, daemon=True).start()
-        elif not self.verbose:
-            print("Warning: Tokens will not be updated automatically.")
+        elif self.verbose:
+            print("[Schwabdev] Warning: Tokens will not be updated automatically.")
 
         if self.verbose:
-            print("Schwabdev Client Initialization Complete")
+            print("[Schwabdev] Client Initialization Complete")
 
     def update_tokens(self, force=False):
         """
@@ -106,16 +106,16 @@ class Client:
         :type force: bool
         """
         if (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).days >= (self._refresh_token_timeout - 1) or force:  # check if we need to update refresh (and access) token
-            print("The refresh token has expired, please update!")
+            print("[Schwabdev] The refresh token has expired, please update!")
             self._update_refresh_token()
         elif ((datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).days >= 1) or (
                 (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).seconds > (self._access_token_timeout - 61)):  # check if we need to update access token
-            if self.verbose: print("The access token has expired, updating automatically.")
+            if self.verbose: print("[Schwabdev] The access token has expired, updating automatically.")
             self._update_access_token()
 
     def update_tokens_auto(self):
         import warnings
-        warnings.warn("update_tokens_auto() is deprecated and is now started when the client is created (if update_tokens_auto=True (default)).", DeprecationWarning, stacklevel=2)
+        warnings.warn("update_tokens_auto() is deprecated and is now started by default when the client is created (if update_tokens_auto=True (default)).", DeprecationWarning, stacklevel=2)
 
     def _update_access_token(self):
         """
@@ -136,11 +136,11 @@ class Client:
                 self.id_token = new_td.get("id_token")
                 self._write_tokens_file(self._access_token_issued, refresh_token_issued, new_td)
                 if self.verbose: # show user that we have updated the access token
-                    print(f"Access token updated: {self._access_token_issued}")
+                    print(f"[Schwabdev] Access token updated: {self._access_token_issued}")
                 break
             else:
                 print(response.text)
-                print(f"Could not get new access token ({i+1} of 3).")
+                print(f"[Schwabdev] Could not get new access token ({i+1} of 3).")
                 time.sleep(10)
 
     def _update_refresh_token(self):
@@ -149,9 +149,9 @@ class Client:
         """
         self.awaiting_input = True # set flag since we are waiting for user input
         # get authorization code (requires user to authorize)
-        #print("Please authorize this program to access your schwab account.")
+        #print("[Schwabdev] Please authorize this program to access your schwab account.")
         auth_url = f'https://api.schwabapi.com/v1/oauth/authorize?client_id={self._app_key}&redirect_uri={self._callback_url}'
-        print(f"Open to authenticate: {auth_url}")
+        print(f"[Schwabdev] Open to authenticate: {auth_url}")
         webbrowser.open(auth_url)
         response_url = input("After authorizing, paste the address bar url here: ")
         code = f"{response_url[response_url.index('code=') + 5:response_url.index('%40')]}@"  # session = responseURL[responseURL.index("session=")+8:]
@@ -166,10 +166,10 @@ class Client:
             self.awaiting_input = False  # reset flag since tokens have been updated
             self.id_token = new_td.get("id_token")
             self._write_tokens_file(self._access_token_issued, self._refresh_token_issued, new_td)
-            if self.verbose: print("Refresh and Access tokens updated")
+            if self.verbose: print("[Schwabdev] Refresh and Access tokens updated")
         else:
             print(response.text)
-            print("Could not get new refresh and access tokens, check these:\n    1. App status is "
+            print("[Schwabdev] Could not get new refresh and access tokens, check these:\n    1. App status is "
                   "\"Ready For Use\".\n    2. App key and app secret are valid.\n    3. You pasted the "
                   "whole url within 30 seconds. (it has a quick expiration)")
 
@@ -516,7 +516,7 @@ class Client:
         :return: quote for a single symbol
         :rtype: request.Response
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote(symbol_id)}/quotes',
+        return requests.get(f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote_plus(symbol_id)}/quotes',
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)

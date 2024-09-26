@@ -14,14 +14,14 @@ client = schwabdev.Client(app_key, app_secret)
 ```
 And from here on "client" can be used to make api calls via `client.XXXX()`, all calls are outlined in `tests/api_demo.py` and `docs/api.md`.  
 Now lets look at all of the parameters that can be passed to the client constructor:
-> Syntax: `client = schwabdev.Client(app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, verbose=False, update_tokens_auto=True)`
+> Syntax: `client = schwabdev.Client(app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, verbose=True, update_tokens_auto=True)`
 > * Param app_key(str): app key to use, 32 chars long.  
 > * Param app_secret(str): app secret to use, 16 chars long.  
 > * Param callback_url(str): callback url to use, must be https and not end with a slash "/".  
 > * Param tokens_file(str): path to tokens file.  
 > * Param timeout(int): timeout to use when making requests.  
-> * Param verbose(bool): verbose (print extra information).  
-> * Param update_tokens_auto(bool): thread that checks/updats the access token and refresh token (requires user input).
+> * Param verbose(bool): verbose (print extra information that isn't neccessary).  
+> * Param update_tokens_auto(bool): thread that checks/updates the access token and refresh token (requires user input for refresh token).
 
 
 The Schwab API uses two tokens to use the api:
@@ -34,6 +34,7 @@ The access token can be easily updated/refreshed assuming that the refresh token
 ## Common Issues
 
 > Problem: Trying to sign into account and get error message: "We are unable to complete your request. Please contact customer service for further assistance."  
+> Problem: "Whitelabel Error Page This application has no configured error view, so you are seeing this as a fallback." (status=500)  
 > Fix: Your app is "Approved - Pending", you must wait for status "Ready for Use".  
 > Note: Or you *could* have an account type that is not supported by the Schwab API.
 
@@ -43,6 +44,15 @@ The access token can be easily updated/refreshed assuming that the refresh token
 > Problem: Issues with option contracts in api calls or streaming:  
 > Fix: You are likely not following the format for option contracts.   
 > Option contract format: Symbol (6 characters including spaces!) | Expiration (6 characters) | Call/Put (1 character) | Strike Price (5+3=8 characters)
+
+> Problem: "{"error":"unsupported_token_type","error_description":"400 Bad Request: \"{\"error_description\":\"Exception while authenticating refresh token..."  
+> Problem: "Could not get new access token (1 of 3)." (or x of 3 etc)  
+> Cause: Your refresh token is invalid (maybe you created a new refresh token on a different machine).  
+> Fix: Manually update refresh token by changing the date in `tokens.json` or by calling `client.update_tokens(force=True)`
+
+> Problem: "can't register atexit after shutdown"  
+> Cause: The main thread dies before the stream thread starts  
+> Fix: Add a delay after starting or sending a request, something to let the stream thread start up before the main thread closes.
 
 > Problem: API calls throwing errors despite access token and refresh token being valid / not expired.  
 > Fix: Manually update refresh / access tokens by calling `client.update_tokens(force=True)`; You can also delete the tokens.json file.

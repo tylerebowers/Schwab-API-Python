@@ -28,6 +28,11 @@ Sending in requests to the streamer can be done using the `streamer.send(message
 #subscribing to fields 0,1,2,3 for equities "AMD" and "INTC"
 streamer.send(streamer.level_one_equities("AMD,INTC", "0,1,2,3"))
 ```
+If you are using an async function, then sending asyncronous requests to the streamer can be done using the `streamer.send_async(message)` function. 
+```py
+#subscribing to fields 0,1,2,3 for equities "AMD" and "INTC"
+await streamer.send_async(streamer.level_one_equities("AMD,INTC", "0,1,2,3"))
+```
 ## Streamable assets
 Notes:  
 * "0" must always be included in the fields.

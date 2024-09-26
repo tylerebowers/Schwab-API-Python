@@ -7,11 +7,11 @@ Github: https://github.com/tylerebowers/Schwab-API-Python
 import json
 import atexit
 import asyncio
+import datetime
 import threading
 import websockets
 from time import sleep
 import websockets.exceptions
-from datetime import datetime, time
 
 
 class Stream:
@@ -28,7 +28,6 @@ class Stream:
         self.active = False             # whether the stream is active
         self._thread = None             # the thread that runs the stream
         self._client = client           # so we can get streamer info
-        self.verbose = client.verbose   # inherit the client's verbose setting
         self.subscriptions = {}         # a dictionary of subscriptions
 
         # register atexit to stop the stream (if active)
@@ -49,15 +48,16 @@ class Stream:
         if response.ok:
             self._streamer_info = response.json().get('streamerInfo', None)[0]
         else:
-            print("Could not get streamerInfo")
+            print("[Schwabdev] Could not get streamerInfo")
 
         # start the stream
-        start_time = datetime.now()
+        start_time = datetime.datetime.now(datetime.timezone.utc)
         while True:
             try:
-                start_time = datetime.now()
-                if self.verbose: print("Connecting to streaming server...")
+                start_time = datetime.datetime.now(datetime.timezone.utc)
+                if self._client.verbose: print("[Schwabdev] Connecting to streaming server...")
                 async with websockets.connect(self._streamer_info.get('streamerSocketUrl'), ping_interval=None) as self._websocket:
+                    if self._client.verbose: print("[Schwabdev] Connected to streaming server.")
                     # send login payload
                     login_payload = self.basic_request(service="ADMIN",
                                                        command="LOGIN",
@@ -87,17 +87,16 @@ class Stream:
             except Exception as e:
                 self.active = False
                 if e is websockets.exceptions.ConnectionClosedOK or str(e) == "received 1000 (OK); then sent 1000 (OK)":  # catch logout request
-                    if self.verbose: print("Stream has closed.")
+                    if self._client.verbose: print("[Schwabdev] Stream connection closed.")
                     break
                 elif e is websockets.exceptions.ConnectionClosedError or str(e) == "no close frame received or sent":  # catch no subscriptions kick
-                    if self.verbose: print(f"Stream closed (likely no subscriptions): {e}")
+                    print(f"[Schwabdev] Stream connection closed (likely no subscriptions): {e}")
                     break
-                elif (datetime.now() - start_time).seconds <= 90:
-                    if self.verbose: print("Stream has crashed within 90 seconds, likely no subscriptions or invalid login.")
+                elif (datetime.datetime.now(datetime.timezone.utc) - start_time).seconds <= 90:
+                    print(f"[Schwabdev] Stream has crashed within 90 seconds ({e}), likely no subscriptions, invalid login, or lost connection (not restarting).")
                     break
                 else: # stream has quit unexpectedly, try to reconnect
-                    if self.verbose: print(f"{e}")
-                    if self.verbose: print("Connection lost to server, reconnecting...")
+                    print(f"[Schwabdev] Stream connection lost to server ({e}), reconnecting...")
 
     def start(self, receiver=print, *args, **kwargs):
         """
@@ -113,9 +112,9 @@ class Stream:
             self._thread.start()
             # if the thread does not start in time then the main program may close before the streamer starts
         else:
-            print("Stream already active.")
+            if self._client.verbose: print("[Schwabdev] Stream already active.")
 
-    def start_automatic(self, receiver=print, after_hours=False, pre_hours=False):
+    def start_auto(self, receiver=print, after_hours=False, pre_hours=False):
         """
         Start the stream automatically at market open and close, will NOT erase subscriptions
         :param receiver: function to call when data is received
@@ -125,30 +124,30 @@ class Stream:
         :param pre_hours: include pre hours trading
         :type pre_hours: bool
         """
-        start = time(9, 29, 0)  # market opens at 9:30
-        end = time(16, 0, 0)  # market closes at 4:00
+        start = datetime.time(13, 29, 0, tzinfo=datetime.timezone.utc)  # market opens at 9:30 ET
+        end = datetime.time(20, 0, 0, tzinfo=datetime.timezone.utc)  # market closes at 4:00 ET
         if pre_hours:
-            start = time(7, 59, 0)
+            start = datetime.time(11, 59, 0, tzinfo=datetime.timezone.utc)
         if after_hours:
-            end = time(20, 0, 0)
+            end = datetime.time(24, 0, 0, tzinfo=datetime.timezone.utc)
 
         def checker():
 
             while True:
-                in_hours = (start <= datetime.now().time() <= end) and (0 <= datetime.now().weekday() <= 4)
+                in_hours = (start <= datetime.datetime.now(datetime.timezone.utc).time() <= end) and (0 <= datetime.datetime.now(datetime.timezone.utc).weekday() <= 4)
                 if in_hours and not self.active:
                     if len(self.subscriptions) == 0:
-                        if self.verbose: print("No subscriptions, starting stream anyways.")
+                        if self._client.verbose: print("[Schwabdev] No subscriptions, starting stream anyways.")
                     self.start(receiver=receiver)
                 elif not in_hours and self.active:
-                    if self.verbose: print("Stopping Stream.")
+                    if self._client.verbose: print("[Schwabdev] Stopping Stream.")
                     self.stop(clear_subscriptions=False)
                 sleep(60)
 
         threading.Thread(target=checker).start()
 
-        if not start <= datetime.now().time() <= end:
-            print("Stream was started outside of active hours and will launch when in hours.")
+        if not start <= datetime.datetime.now(datetime.timezone.utc).time() <= end:
+            print("[Schwabdev] Stream was started outside of active hours and will launch when in hours.")
 
     def _record_request(self, request):
         """
@@ -211,7 +210,30 @@ class Stream:
             to_send = json.dumps({"requests": requests})
             asyncio.run(_send(to_send))
         else:
-            if self.verbose: print("Stream is not active, request queued.")
+            if self._client.verbose: print("[Schwabdev] Stream is not active, request queued.")
+
+
+    async def send_async(self, requests):
+        """
+        Send an async (must be awaited) request to the stream (functionally equivalent to send)
+        :param requests: list of requests or a single request
+        :type requests: list | dict
+        """
+
+        # make sure requests is a list
+        if type(requests) is not list:
+            requests = [requests]
+
+        # add requests to list of subscriptions
+        for request in requests:
+            self._record_request(request)
+
+        # send the request if the stream is active, queue otherwise
+        if self.active:
+            to_send = json.dumps({"requests": requests})
+            await self._websocket.send(to_send)
+        else:
+            if self._client.verbose: print("[Schwabdev] Stream is not active, request queued.")
 
 
     def stop(self, clear_subscriptions=True):
@@ -242,24 +264,23 @@ class Stream:
             response = self._client.preferences()
             if response.ok:
                 self._streamer_info = response.json().get('streamerInfo', None)[0]
+            else:
+                print("[Schwabdev] Could not use/get streamerInfo")
+                return {}
 
         # remove None parameters
         if parameters is not None:
             for key in parameters.keys():
                 if parameters[key] is None: del parameters[key]
 
-        if self._streamer_info is not None:
-            request = {"service": service.upper(),
-                       "command": command.upper(),
-                       "requestid": self._request_id,
-                       "SchwabClientCustomerId": self._streamer_info.get("schwabClientCustomerId"),
-                       "SchwabClientCorrelId": self._streamer_info.get("schwabClientCorrelId")}
-            if parameters is not None and len(parameters) > 0: request["parameters"] = parameters
-            self._request_id += 1
-            return request
-        else:
-            print("basic_request(): Could not use/get streamerInfo")
-            return None
+        self._request_id += 1
+        request = {"service": service.upper(),
+                   "command": command.upper(),
+                   "requestid": self._request_id,
+                   "SchwabClientCustomerId": self._streamer_info.get("schwabClientCustomerId"),
+                   "SchwabClientCorrelId": self._streamer_info.get("schwabClientCorrelId")}
+        if parameters is not None and len(parameters) > 0: request["parameters"] = parameters
+        return request
 
     @staticmethod
     def _list_to_string(ls):
