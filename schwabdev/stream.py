@@ -127,7 +127,7 @@ class Stream:
         start = datetime.time(13, 29, 0, tzinfo=datetime.timezone.utc)  # market opens at 9:30 ET
         end = datetime.time(20, 0, 0, tzinfo=datetime.timezone.utc)  # market closes at 4:00 ET
         if pre_hours:
-            start = datetime.time(11, 59, 0, tzinfo=datetime.timezone.utc)
+            start = datetime.time(10, 59, 0, tzinfo=datetime.timezone.utc)
         if after_hours:
             end = datetime.time(24, 0, 0, tzinfo=datetime.timezone.utc)
 
