@@ -1,3 +1,7 @@
+"""
+This file functions as a "terminal emulator" so you can enter python code to test the api without restarting th whole program.
+"""
+
 import schwabdev
 from dotenv import load_dotenv
 import os

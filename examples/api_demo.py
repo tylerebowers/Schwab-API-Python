@@ -1,3 +1,8 @@
+"""
+This file contains examples for every api call.
+"""
+
+
 import schwabdev
 import datetime
 from dotenv import load_dotenv

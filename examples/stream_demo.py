@@ -1,3 +1,7 @@
+"""
+This file contains examples for stream request.
+"""
+
 import schwabdev
 from dotenv import load_dotenv
 import os

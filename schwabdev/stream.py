@@ -37,7 +37,7 @@ class Stream:
         atexit.register(stop_atexit)
 
 
-    async def _start_streamer(self, receiver_func=print, *args, **kwargs):
+    async def _start_streamer(self, receiver_func=print, **kwargs):
         """
         Start the streamer
         :param receiver_func: function to call when data is received
@@ -49,6 +49,7 @@ class Stream:
             self._streamer_info = response.json().get('streamerInfo', None)[0]
         else:
             print("[Schwabdev] Could not get streamerInfo")
+            return
 
         # start the stream
         start_time = datetime.datetime.now(datetime.timezone.utc)
@@ -65,7 +66,7 @@ class Stream:
                                                                    "SchwabClientChannel": self._streamer_info.get("schwabClientChannel"),
                                                                    "SchwabClientFunctionId": self._streamer_info.get("schwabClientFunctionId")})
                     await self._websocket.send(json.dumps(login_payload))
-                    receiver_func(await self._websocket.recv(), *args, **kwargs)
+                    receiver_func(await self._websocket.recv(), **kwargs)
                     self.active = True
 
                     # send subscriptions
@@ -78,11 +79,11 @@ class Stream:
                                                                        "fields": Stream._list_to_string(fields)}))
                         if reqs:
                             await self._websocket.send(json.dumps({"requests": reqs}))
-                            receiver_func(await self._websocket.recv(), *args, **kwargs)
+                            receiver_func(await self._websocket.recv(), **kwargs)
 
                     # main listener loop
                     while True:
-                        receiver_func(await self._websocket.recv(), *args, **kwargs)
+                        receiver_func(await self._websocket.recv(), **kwargs)
 
             except Exception as e:
                 self.active = False
@@ -98,23 +99,25 @@ class Stream:
                 else: # stream has quit unexpectedly, try to reconnect
                     print(f"[Schwabdev] Stream connection lost to server ({e}), reconnecting...")
 
-    def start(self, receiver=print, *args, **kwargs):
+    def start(self, receiver=print, daemon: bool = True, **kwargs):
         """
         Start the stream
         :param receiver: function to call when data is received
         :type receiver: function
+        :param daemon: whether to run the thread in the background (as a daemon)
+        :type daemon: bool
         """
         if not self.active:
             def _start_async():
-                asyncio.run(self._start_streamer(receiver, *args, **kwargs))
+                asyncio.run(self._start_streamer(receiver, **kwargs))
 
-            self._thread = threading.Thread(target=_start_async, daemon=False)
+            self._thread = threading.Thread(target=_start_async, daemon=daemon)
             self._thread.start()
             # if the thread does not start in time then the main program may close before the streamer starts
         else:
             if self._client.verbose: print("[Schwabdev] Stream already active.")
 
-    def start_auto(self, receiver=print, after_hours=False, pre_hours=False):
+    def start_auto(self, receiver=print, after_hours=False, pre_hours=False, daemon: bool = True, **kwargs):
         """
         Start the stream automatically at market open and close, will NOT erase subscriptions
         :param receiver: function to call when data is received
@@ -129,27 +132,27 @@ class Stream:
         if pre_hours:
             start = datetime.time(10, 59, 0, tzinfo=datetime.timezone.utc)
         if after_hours:
-            end = datetime.time(24, 0, 0, tzinfo=datetime.timezone.utc)
-
+            end = datetime.time.max.replace(tzinfo=datetime.timezone.utc) # 23:59:59:999999
         def checker():
 
             while True:
-                in_hours = (start <= datetime.datetime.now(datetime.timezone.utc).time() <= end) and (0 <= datetime.datetime.now(datetime.timezone.utc).weekday() <= 4)
+                now = datetime.datetime.now(datetime.timezone.utc)
+                in_hours = (start <= now.time().replace(tzinfo=datetime.timezone.utc) <= end) and (0 <= now.weekday() <= 4)
                 if in_hours and not self.active:
                     if len(self.subscriptions) == 0:
                         if self._client.verbose: print("[Schwabdev] No subscriptions, starting stream anyways.")
-                    self.start(receiver=receiver)
+                    self.start(receiver=receiver, daemon=daemon, **kwargs)
                 elif not in_hours and self.active:
                     if self._client.verbose: print("[Schwabdev] Stopping Stream.")
                     self.stop(clear_subscriptions=False)
-                sleep(60)
+                sleep(30)
 
-        threading.Thread(target=checker).start()
+        threading.Thread(target=checker, daemon=daemon).start()
 
-        if not start <= datetime.datetime.now(datetime.timezone.utc).time() <= end:
+        if not start <= datetime.datetime.now(datetime.timezone.utc).time().replace(tzinfo=datetime.timezone.utc) <= end:
             print("[Schwabdev] Stream was started outside of active hours and will launch when in hours.")
 
-    def _record_request(self, request):
+    def _record_request(self, request: dict):
         """
         Record the request into self.subscriptions (for the event of crashes)
         :param request: request
@@ -187,7 +190,7 @@ class Stream:
 
 
 
-    def send(self, requests):
+    def send(self, requests: list | dict):
         """
         Send a request to the stream
         :param requests: list of requests or a single request
@@ -213,7 +216,7 @@ class Stream:
             if self._client.verbose: print("[Schwabdev] Stream is not active, request queued.")
 
 
-    async def send_async(self, requests):
+    async def send_async(self, requests: list | dict):
         """
         Send an async (must be awaited) request to the stream (functionally equivalent to send)
         :param requests: list of requests or a single request
@@ -236,7 +239,7 @@ class Stream:
             if self._client.verbose: print("[Schwabdev] Stream is not active, request queued.")
 
 
-    def stop(self, clear_subscriptions=True):
+    def stop(self, clear_subscriptions: bool = True):
         """
         Stop the stream
         :param clear_subscriptions: clear records
@@ -248,7 +251,7 @@ class Stream:
         self.send(self.basic_request(service="ADMIN", command="LOGOUT"))
         self.active = False
 
-    def basic_request(self, service, command, parameters=None):
+    def basic_request(self, service: str, command: str, parameters: dict = None):
         """
         Create a basic request (all requests follow this format)
         :param service: service to use
@@ -283,7 +286,7 @@ class Stream:
         return request
 
     @staticmethod
-    def _list_to_string(ls):
+    def _list_to_string(ls: list | str):
         """
         Convert a list to a string (e.g. [1, "B", 3] -> "1,B,3"), or passthrough if already a string
         :param ls: list to convert
@@ -294,7 +297,7 @@ class Stream:
         if type(ls) is str: return ls
         elif type(ls) is list: return ",".join(map(str, ls))
 
-    def level_one_equities(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def level_one_equities(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Level one equities
         :param keys: list of keys to use (e.g. ["AMD", "INTC"])
@@ -308,7 +311,7 @@ class Stream:
         """
         return self.basic_request("LEVELONE_EQUITIES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_options(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def level_one_options(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Level one options, key format: [Underlying Symbol (6 characters including spaces) | Expiration (6 characters) | Call/Put (1 character) | Strike Price (5+3=8 characters)]
         :param keys: list of keys to use (e.g. ["GOOG  240809C00095000", "AAPL  240517P00190000"])
@@ -322,7 +325,7 @@ class Stream:
         """
         return self.basic_request("LEVELONE_OPTIONS", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_futures(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def level_one_futures(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Level one futures, key format: '/' + 'root symbol' + 'month code' + 'year code'; month code is 1 character: (F: Jan, G: Feb, H: Mar, J: Apr, K: May, M: Jun, N: Jul, Q: Aug, U: Sep, V: Oct, X: Nov, Z: Dec), year code is 2 characters (i.e. 2024 = 24)
         :param keys: list of keys to use (e.g. ["/ESF24", "/GCG24"])
@@ -336,7 +339,7 @@ class Stream:
         """
         return self.basic_request("LEVELONE_FUTURES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_futures_options(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def level_one_futures_options(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Level one futures options, key format: '.' + '/' + 'root symbol' + 'month code' + 'year code' + 'Call/Put code' + 'Strike Price'
         :param keys: list of keys to use (e.g. ["./OZCZ23C565"])
@@ -350,7 +353,7 @@ class Stream:
         """
         return self.basic_request("LEVELONE_FUTURES_OPTIONS", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def level_one_forex(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def level_one_forex(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Level one forex, key format: 'from currency' + '/' + 'to currency'
         :param keys: list of keys to use (e.g. ["EUR/USD", "JPY/USD"])
@@ -364,7 +367,7 @@ class Stream:
         """
         return self.basic_request("LEVELONE_FOREX", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def nyse_book(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def nyse_book(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         NYSE book orders
         :param keys: list of keys to use (e.g. ["NIO", "F"])
@@ -378,7 +381,7 @@ class Stream:
         """
         return self.basic_request("NYSE_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def nasdaq_book(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def nasdaq_book(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         NASDAQ book orders
         :param keys: list of keys to use (e.g. ["AMD", "CRWD"])
@@ -392,7 +395,7 @@ class Stream:
         """
         return self.basic_request("NASDAQ_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def options_book(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def options_book(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Options book orders
         :param keys: list of keys to use (e.g. ["GOOG  240809C00095000", "AAPL  240517P00190000"])
@@ -406,7 +409,7 @@ class Stream:
         """
         return self.basic_request("OPTIONS_BOOK", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def chart_equity(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def chart_equity(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Chart equity
         :param keys: list of keys to use (e.g. ["GOOG", "AAPL"])
@@ -420,7 +423,7 @@ class Stream:
         """
         return self.basic_request("CHART_EQUITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def chart_futures(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def chart_futures(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Chart futures, key format: '/' + 'root symbol' + 'month code' + 'year code'; month code is 1 character: (F: Jan, G: Feb, H: Mar, J: Apr, K: May, M: Jun, N: Jul, Q: Aug, U: Sep, V: Oct, X: Nov, Z: Dec), year code is 2 characters (i.e. 2024 = 24)
         :param keys: list of keys to use (e.g. ["/ESF24", "/GCG24"])
@@ -434,7 +437,7 @@ class Stream:
         """
         return self.basic_request("CHART_FUTURES", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def screener_equity(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def screener_equity(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Screener equity, key format: (PREFIX)_(SORTFIELD)_(FREQUENCY); Prefix: ($COMPX, $DJI, $SPX.X, INDEX_AL, NYSE, NASDAQ, OTCBB, EQUITY_ALL); Sortfield: (VOLUME, TRADES, PERCENT_CHANGE_UP, PERCENT_CHANGE_DOWN, AVERAGE_PERCENT_VOLUME), Frequency: (0 (all day), 1, 5, 10, 30 60)
         :param keys: list of keys to use (e.g. ["$DJI_PERCENT_CHANGE_UP_60", "NASDAQ_VOLUME_30"])
@@ -448,7 +451,7 @@ class Stream:
         """
         return self.basic_request("SCREENER_EQUITY", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def screener_options(self, keys: str | list, fields: str | list, command="ADD") -> dict:
+    def screener_options(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """
         Screener option key format: (PREFIX)_(SORTFIELD)_(FREQUENCY); Prefix: (OPTION_PUT, OPTION_CALL, OPTION_ALL); Sortfield: (VOLUME, TRADES, PERCENT_CHANGE_UP, PERCENT_CHANGE_DOWN, AVERAGE_PERCENT_VOLUME), Frequency: (0 (all day), 1, 5, 10, 30 60)
         :param keys: list of keys to use (e.g. ["OPTION_PUT_PERCENT_CHANGE_UP_60", "OPTION_CALL_TRADES_30"])
@@ -462,7 +465,7 @@ class Stream:
         """
         return self.basic_request("SCREENER_OPTION", command, parameters={"keys": Stream._list_to_string(keys), "fields": Stream._list_to_string(fields)})
 
-    def account_activity(self, keys="Account Activity", fields="0,1,2,3", command="SUBS") -> dict:
+    def account_activity(self, keys="Account Activity", fields="0,1,2,3", command: str = "SUBS") -> dict:
         """
         Account activity
         :param keys: list of keys to use (e.g. ["Account Activity"])

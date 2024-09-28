@@ -1,3 +1,9 @@
+"""
+This file contains functions access the Schwab api
+Coded by Tyler Bowers
+Github: https://github.com/tylerebowers/Schwab-API-Python
+"""
+
 import json
 import time
 import base64
@@ -7,6 +13,7 @@ import threading
 import webbrowser
 import urllib.parse
 from .stream import Stream
+
 
 class Client:
 
@@ -48,21 +55,22 @@ class Client:
         elif timeout <= 0:
             raise Exception("Timeout must be greater than 0 and is recomended to be 5 seconds or more.")
 
-        self._app_key = app_key             # app key credential
-        self._app_secret = app_secret       # app secret credential
-        self._callback_url = callback_url   # callback url to use
-        self.access_token = None            # access token from auth
-        self.refresh_token = None           # refresh token from auth
-        self.id_token = None                # id token from auth
-        self._access_token_issued = None    # datetime of access token issue
-        self._refresh_token_issued = None   # datetime of refresh token issue
-        self._access_token_timeout = 1800   # in seconds (from schwab)
-        self._refresh_token_timeout = 7     # in days (from schwab)
-        self._tokens_file = tokens_file     # path to tokens file
-        self.timeout = timeout              # timeout to use in requests
-        self.verbose = verbose              # verbose mode
-        self.stream = Stream(self)          # init the streaming object
-        self.awaiting_input = False         # whether we are awaiting user input
+        self.version = "2.2.5"
+        self._app_key = app_key                   # app key credential
+        self._app_secret = app_secret             # app secret credential
+        self._callback_url = callback_url         # callback url to use
+        self.access_token = None                  # access token from auth
+        self.refresh_token = None                 # refresh token from auth
+        self.id_token = None                      # id token from auth
+        self._access_token_issued = None          # datetime of access token issue
+        self._refresh_token_issued = None         # datetime of refresh token issue
+        self._access_token_timeout = 1800         # in seconds (from schwab)
+        self._refresh_token_timeout = 7*24*60*60  # in seconds (from schwab)
+        self._tokens_file = tokens_file           # path to tokens file
+        self.timeout = timeout                    # timeout to use in requests
+        self.verbose = verbose                    # verbose mode
+        self.stream = Stream(self)                # init the streaming object
+        self.awaiting_input = False               # whether we are awaiting user input
 
         # Try to load tokens from the tokens file
         at_issued, rt_issued, token_dictionary = self._read_tokens_file()
@@ -74,8 +82,10 @@ class Client:
             self._access_token_issued = at_issued
             self._refresh_token_issued = rt_issued
             if self.verbose:
-                print(self._access_token_issued.strftime("[Schwabdev] Access token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).seconds} seconds)")
-                print(self._refresh_token_issued.strftime("[Schwabdev] Refresh token last updated: %Y-%m-%d %H:%M:%S") + f" (expires in {self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).days} days)")
+                at_delta = self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).total_seconds()
+                print(f"[Schwabdev] Access token expires in {"-" if at_delta < 0 else ""}{int(abs(at_delta) / 3600):02}H:{int((abs(at_delta) % 3600) / 60):02}M:{int((abs(at_delta) % 60)):02}S")
+                rt_delta = self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).total_seconds()
+                print(f"[Schwabdev] Refresh token expires in {"-" if rt_delta < 0 else ""}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S")
             # check if tokens need to be updated and update if needed
             self.update_tokens()
         else:
@@ -105,11 +115,15 @@ class Client:
         :param force: force update of refresh token (also updates access token)
         :type force: bool
         """
-        if (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).days >= (self._refresh_token_timeout - 1) or force:  # check if we need to update refresh (and access) token
-            print("[Schwabdev] The refresh token has expired, please update!")
+        # refresh token notification
+        rt_delta = self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).total_seconds()
+        if rt_delta < 43200: # Start to ware the user if the refresh token will expire in less than 43200 = 12 hours
+            print(f"[Schwabdev] The refresh token will expire soon! ({"-" if rt_delta < 0 else ""}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S remaining)")
+
+        if (rt_delta < 3600) or force:  # check if we need to update refresh (and access) token
+            print("[Schwabdev] The refresh token has expired!")
             self._update_refresh_token()
-        elif ((datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).days >= 1) or (
-                (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).seconds > (self._access_token_timeout - 61)):  # check if we need to update access token
+        elif (self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).total_seconds()) < 61:  # check if we need to update access token
             if self.verbose: print("[Schwabdev] The access token has expired, updating automatically.")
             self._update_access_token()
 
@@ -173,7 +187,7 @@ class Client:
                   "\"Ready For Use\".\n    2. App key and app secret are valid.\n    3. You pasted the "
                   "whole url within 30 seconds. (it has a quick expiration)")
 
-    def _post_oauth_token(self, grant_type, code):
+    def _post_oauth_token(self, grant_type: str, code: str):
         """
         Makes API calls for auth code and refresh tokens
         :param grant_type: 'authorization_code' or 'refresh_token'
@@ -195,7 +209,7 @@ class Client:
             raise Exception("Invalid grant type; options are 'authorization_code' or 'refresh_token'")
         return requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data)
 
-    def _write_tokens_file(self, at_issued, rt_issued, token_dictionary):
+    def _write_tokens_file(self, at_issued: datetime, rt_issued: datetime, token_dictionary: dict):
         """
         Writes token file
         :param at_issued: access token issued
@@ -229,7 +243,7 @@ class Client:
             print(e)
             return None, None, None
 
-    def _params_parser(self, params):
+    def _params_parser(self, params: dict):
         """
         Removes None (null) values
         :param params: params to remove None values from
@@ -241,11 +255,11 @@ class Client:
             if params[key] is None: del params[key]
         return params
 
-    def _time_convert(self, dt=None, form="8601"):
+    def _time_convert(self, dt = None, form="8601"):
         """
         Convert time to the correct format, passthrough if a string, preserve None if None for params parser
         :param dt: datetime.pyi object to convert
-        :type dt: datetime.pyi
+        :type dt: datetime.pyi | str | None
         :param form: what to convert input to
         :type form: str
         :return: converted time or passthrough
@@ -295,11 +309,11 @@ class Client:
                             headers={'Authorization': f'Bearer {self.access_token}'},
                             timeout=self.timeout)
 
-    def account_details_all(self, fields=None) -> requests.Response:
+    def account_details_all(self, fields: str = None) -> requests.Response:
         """
         All the linked account information for the user logged in. The balances on these accounts are displayed by default however the positions on these accounts will be displayed based on the "positions" flag.
         :param fields: fields to return (options: "positions")
-        :type fields: str
+        :type fields: str | None
         :return: details for all linked accounts
         :rtype: request.Response
         """
@@ -308,13 +322,13 @@ class Client:
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
-    def account_details(self, accountHash: str, fields=None) -> requests.Response:
+    def account_details(self, accountHash: str, fields: str = None) -> requests.Response:
         """
         Specific account information with balances and positions. The balance information on these accounts is displayed by default but Positions will be returned based on the "positions" flag.
         :param accountHash: account hash from account_linked()
         :type accountHash: str
         :param fields: fields to return
-        :type fields: str
+        :type fields: str | None
         :return: details for one linked account
         :rtype: request.Response
         """
@@ -323,7 +337,7 @@ class Client:
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
-    def account_orders(self, accountHash: str, fromEnteredTime: 'datetime | str', toEnteredTime: 'datetime | str', maxResults=None, status=None) -> requests.Response:
+    def account_orders(self, accountHash: str, fromEnteredTime: datetime.datetime | str, toEnteredTime: datetime.datetime | str, maxResults: int = None, status: str = None) -> requests.Response:
         """
         All orders for a specific account. Orders retrieved can be filtered based on input parameters below. Maximum date range is 1 year.
         :param accountHash: account hash from account_linked()
@@ -333,9 +347,9 @@ class Client:
         :param toEnteredTime: to entered time
         :type toEnteredTime: datetime.pyi | str
         :param maxResults: maximum number of results
-        :type maxResults: int
+        :type maxResults: int| None
         :param status: status ("AWAITING_PARENT_ORDER"|"AWAITING_CONDITION"|"AWAITING_STOP_CONDITION"|"AWAITING_MANUAL_REVIEW"|"ACCEPTED"|"AWAITING_UR_OUT"|"PENDING_ACTIVATION"|"QUEUED"|"WORKING"|"REJECTED"|"PENDING_CANCEL"|"CANCELED"|"PENDING_REPLACE"|"REPLACED"|"FILLED"|"EXPIRED"|"NEW"|"AWAITING_RELEASE_TIME"|"PENDING_ACKNOWLEDGEMENT"|"PENDING_RECALL"|"UNKNOWN")
-        :type status: str
+        :type status: str| None
         :return: orders for one linked account hash
         :rtype: request.Response
         """
@@ -362,7 +376,7 @@ class Client:
                              json=order,
                              timeout=self.timeout)
 
-    def order_details(self, accountHash:str, orderId: int | str) -> requests.Response:
+    def order_details(self, accountHash: str, orderId: int | str) -> requests.Response:
         """
         Get a specific order by its ID, for a specific account
         :param accountHash: account hash from account_linked()
@@ -408,7 +422,7 @@ class Client:
                             json=order,
                             timeout=self.timeout)
 
-    def account_orders_all(self, fromEnteredTime: 'datetime | str', toEnteredTime: 'datetime | str', maxResults=None, status=None) -> requests.Response:
+    def account_orders_all(self, fromEnteredTime: datetime.datetime | str, toEnteredTime: datetime.datetime | str, maxResults: int = None, status: str = None) -> requests.Response:
         """
         Get all orders for all accounts
         :param fromEnteredTime: start date
@@ -416,9 +430,9 @@ class Client:
         :param toEnteredTime: end date
         :type toEnteredTime: datetime.pyi | str
         :param maxResults: maximum number of results (set to None for default 3000)
-        :type maxResults: int
+        :type maxResults: int | None
         :param status: status ("AWAITING_PARENT_ORDER"|"AWAITING_CONDITION"|"AWAITING_STOP_CONDITION"|"AWAITING_MANUAL_REVIEW"|"ACCEPTED"|"AWAITING_UR_OUT"|"PENDING_ACTIVATION"|"QUEUED"|"WORKING"|"REJECTED"|"PENDING_CANCEL"|"CANCELED"|"PENDING_REPLACE"|"REPLACED"|"FILLED"|"EXPIRED"|"NEW"|"AWAITING_RELEASE_TIME"|"PENDING_ACKNOWLEDGEMENT"|"PENDING_RECALL"|"UNKNOWN")
-        :type status: str
+        :type status: str | None
         :return: all orders
         :rtype: request.Response
         """
@@ -437,7 +451,7 @@ class Client:
                                       "Content-Type": "application.json"}, data=orderObject)
     """
 
-    def transactions(self, accountHash: str, startDate: 'datetime | str', endDate: 'datetime | str', types: str, symbol=None) -> requests.Response:
+    def transactions(self, accountHash: str, startDate: datetime.datetime | str, endDate: datetime.datetime | str, types: str, symbol: str = None) -> requests.Response:
         """
         All transactions for a specific account. Maximum number of transactions in response is 3000. Maximum date range is 1 year.
         :param accountHash: account hash number
@@ -488,15 +502,15 @@ class Client:
     Market Data
     """
     
-    def quotes(self, symbols=None, fields=None, indicative=False) -> requests.Response:
+    def quotes(self, symbols : list[str] | str, fields: str = None, indicative: bool = False) -> requests.Response:
         """
         Get quotes for a list of tickers
         :param symbols: list of symbols strings (e.g. "AMD,INTC" or ["AMD", "INTC"])
         :type symbols: [str] | str
-        :param fields: list of fields to get ("all", "quote", "fundamental")
-        :type fields: list
+        :param fields: string of fields to get ("all", "quote", "fundamental")
+        :type fields: str | None
         :param indicative: whether to get indicative quotes (True/False)
-        :type indicative: boolean
+        :type indicative: boolean | None
         :return: list of quotes
         :rtype: request.Response
         """
@@ -506,13 +520,13 @@ class Client:
                                 {'symbols': self._format_list(symbols), 'fields': fields, 'indicative': indicative}),
                             timeout=self.timeout)
 
-    def quote(self, symbol_id: str, fields=None) -> requests.Response:
+    def quote(self, symbol_id: str, fields: str = None) -> requests.Response:
         """
         Get quote for a single symbol
         :param symbol_id: ticker symbol
         :type symbol_id: str (e.g. "AAPL", "/ES", "USD/EUR")
-        :param fields: list of fields to get ("all", "quote", "fundamental")
-        :type fields: list
+        :param fields: string of fields to get ("all", "quote", "fundamental")
+        :type fields: str | None
         :return: quote for a single symbol
         :rtype: request.Response
         """
@@ -521,9 +535,9 @@ class Client:
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
-    def option_chains(self, symbol: str, contractType=None, strikeCount=None, includeUnderlyingQuote=None, strategy=None,
-               interval=None, strike=None, range=None, fromDate=None, toDate=None, volatility=None, underlyingPrice=None,
-               interestRate=None, daysToExpiration=None, expMonth=None, optionType=None, entitlement=None) -> requests.Response:
+    def option_chains(self, symbol: str, contractType: str = None, strikeCount: any = None, includeUnderlyingQuote: bool = None, strategy: str = None,
+               interval: any = None, strike: any = None, range: str = None, fromDate: datetime.datetime | str = None, toDate: datetime.datetime | str = None, volatility: any = None, underlyingPrice: any = None,
+               interestRate: any = None, daysToExpiration: any = None, expMonth: str = None, optionType: str = None, entitlement: str = None) -> requests.Response:
         """
         Get Option Chain including information on options contracts associated with each expiration for a ticker.
         :param symbol: ticker symbol
@@ -587,8 +601,8 @@ class Client:
                             params=self._params_parser({'symbol': symbol}),
                             timeout=self.timeout)
 
-    def price_history(self, symbol: str, periodType=None, period=None, frequencyType=None, frequency=None, startDate=None,
-                      endDate=None, needExtendedHoursData=None, needPreviousClose=None) -> requests.Response:
+    def price_history(self, symbol: str, periodType: str = None, period: any = None, frequencyType: str = None, frequency: any = None, startDate: datetime.datetime | str = None,
+                      endDate: any = None, needExtendedHoursData: bool = None, needPreviousClose: bool = None) -> requests.Response:
         """
         Get price history for a ticker
         :param symbol: ticker symbol
@@ -622,7 +636,7 @@ class Client:
                                                         'needPreviousClose': needPreviousClose}),
                             timeout=self.timeout)
 
-    def movers(self, symbol: str, sort=None, frequency=None) -> requests.Response:
+    def movers(self, symbol: str, sort: str = None, frequency: any = None) -> requests.Response:
         """
         Get movers in a specific index and direction
         :param symbol: symbol ("$DJI"|"$COMPX"|"$SPX"|"NYSE"|"NASDAQ"|"OTCBB"|"INDEX_ALL"|"EQUITY_ALL"|"OPTION_ALL"|"OPTION_PUT"|"OPTION_CALL")
@@ -639,7 +653,7 @@ class Client:
                             params=self._params_parser({'sort': sort, 'frequency': frequency}),
                             timeout=self.timeout)
 
-    def market_hours(self, symbols, date=None) -> requests.Response:
+    def market_hours(self, symbols: list[str], date: datetime.datetime | str = None) -> requests.Response:
         """
         Get Market Hours for dates in the future across different markets.
         :param symbols: list of market symbols ("equity", "option", "bond", "future", "forex")
@@ -656,7 +670,7 @@ class Client:
                                  'date': self._time_convert(date, 'YYYY-MM-DD')}),
                             timeout=self.timeout)
 
-    def market_hour(self, market_id: str, date=None) -> requests.Response:
+    def market_hour(self, market_id: str, date: datetime.datetime | str = None) -> requests.Response:
         """
         Get Market Hours for dates in the future for a single market.
         :param market_id: market id ("equity"|"option"|"bond"|"future"|"forex")
@@ -671,7 +685,7 @@ class Client:
                             params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
                             timeout=self.timeout)
 
-    def instruments(self, symbol: str, projection) -> requests.Response:
+    def instruments(self, symbol: str, projection: str) -> requests.Response:
         """
         Get instruments for a list of symbols
         :param symbol: symbol

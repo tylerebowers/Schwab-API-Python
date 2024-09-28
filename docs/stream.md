@@ -9,7 +9,7 @@ client = schwabdev.Client(...)
 streamer = client.stream
 ```
 ### Starting the stream
-To start the streamer you simply call `streamer.start()`, however you will need a response handler to do something useful, see below. The stream will close after ~30 seconds if there are no subscriptions.
+To start the streamer you simply call `streamer.start()`, however you will need a response handler to do something useful, see below. The stream will close after ~30 seconds if there are no subscriptions. By default the stream starts as a daemon thread, meaning that if the main thread terminates then the stream will too, however if you want the stream to continue despite the main thread terminating then add `daemon=False` to the .start(...) parameters - this is useful if you are only using the response handler for processing.
 ### Using your own response handler
 In typical applications you will want to use a seperate response handler that parses received data from the stream. The default method just prints to the terminal. 
 ```py
