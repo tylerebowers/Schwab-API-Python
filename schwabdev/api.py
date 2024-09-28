@@ -55,7 +55,7 @@ class Client:
         elif timeout <= 0:
             raise Exception("Timeout must be greater than 0 and is recomended to be 5 seconds or more.")
 
-        self.version = "2.2.5"
+        self.version = "2.2.6"
         self._app_key = app_key                   # app key credential
         self._app_secret = app_secret             # app secret credential
         self._callback_url = callback_url         # callback url to use
@@ -83,9 +83,9 @@ class Client:
             self._refresh_token_issued = rt_issued
             if self.verbose:
                 at_delta = self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).total_seconds()
-                print(f"[Schwabdev] Access token expires in {"-" if at_delta < 0 else ""}{int(abs(at_delta) / 3600):02}H:{int((abs(at_delta) % 3600) / 60):02}M:{int((abs(at_delta) % 60)):02}S")
+                print(f"[Schwabdev] Access token expires in {'-' if at_delta < 0 else ''}{int(abs(at_delta) / 3600):02}H:{int((abs(at_delta) % 3600) / 60):02}M:{int((abs(at_delta) % 60)):02}S")
                 rt_delta = self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).total_seconds()
-                print(f"[Schwabdev] Refresh token expires in {"-" if rt_delta < 0 else ""}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S")
+                print(f"[Schwabdev] Refresh token expires in {'-' if rt_delta < 0 else ''}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S")
             # check if tokens need to be updated and update if needed
             self.update_tokens()
         else:
@@ -118,7 +118,7 @@ class Client:
         # refresh token notification
         rt_delta = self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).total_seconds()
         if rt_delta < 43200: # Start to ware the user if the refresh token will expire in less than 43200 = 12 hours
-            print(f"[Schwabdev] The refresh token will expire soon! ({"-" if rt_delta < 0 else ""}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S remaining)")
+            print(f"[Schwabdev] The refresh token will expire soon! ({'-' if rt_delta < 0 else ''}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S remaining)")
 
         if (rt_delta < 3600) or force:  # check if we need to update refresh (and access) token
             print("[Schwabdev] The refresh token has expired!")
