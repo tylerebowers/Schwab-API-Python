@@ -1,6 +1,8 @@
 
 # Placing Orders
 After making a client object i.e. `client = schwabdev.Client(...)` we can place orders using the `client.order_place(...)` method.
+### Notes:
+* Orders are currently only supported for equities and options.
 ### Place an order 
 > Syntax: `client.order_place(account_hash, order)`  
 > * Param account_hash(str): account hash to get place order on.  
@@ -310,4 +312,50 @@ order = {"complexOrderStrategyType": "NONE",
              }
          ]
          }
+```
+
+### Iron Condor:
+```py
+order = {
+        "orderStrategyType": "SINGLE",
+        "orderType": "NET_CREDIT",
+        "price": price,
+        "orderLegCollection": [
+            {
+                "instruction": "SELL_TO_OPEN",
+                "quantity": quantity,
+                "instrument": {
+                    "assetType": "OPTION",
+                    "symbol": short_call_symbol
+                }
+            },
+            {
+                "instruction": "BUY_TO_OPEN",
+                "quantity": quantity,
+                "instrument": {
+                    "assetType": "OPTION",
+                    "symbol": long_call_symbol
+                }
+            },
+            {
+                "instruction": "SELL_TO_OPEN",
+                "quantity": quantity,
+                "instrument": {
+                    "assetType": "OPTION",
+                    "symbol": short_put_symbol
+                },
+            },
+            {
+                "instruction": "BUY_TO_OPEN",
+                "quantity": quantity,
+                "instrument": {
+                    "assetType": "OPTION",
+                    "symbol": long_put_symbol
+                },
+            }
+        ],
+        "complexOrderStrategyType": "CUSTOM",
+        "duration": "DAY",
+        "session": "NORMAL"
+    }
 ```

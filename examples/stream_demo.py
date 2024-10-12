@@ -72,7 +72,7 @@ def main():
     streamer.stop()
     # if you don't want to clear the subscriptions, set clear_subscriptions=False
     # streamer.stop(clear_subscriptions=False)
-    # then the next time you start the stream it will resubscribe to the previous subscriptions (except if program is restarted)
+    # if True, then the next time you start the stream it will resubscribe to the previous subscriptions (except if program is restarted)
 
 
 if __name__ == '__main__':

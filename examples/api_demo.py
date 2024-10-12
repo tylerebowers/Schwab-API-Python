@@ -137,6 +137,8 @@ def main():
     # get an option chain
     # print("\nclient.option_chains(\"AAPL\").json()")
     # print(client.option_chains("AAPL").json())
+    # Here is another example for SPX, note that if you call with just $SPX then you will exceed the buffer on Schwab's end hence the additional parameters to limit the size of return.
+    # print(client.option_chains("$SPX", contractType="CALL", range="ITM").json())
     sleep(3)
 
     print("\n\nMarket Data - Options Expiration Chain.")

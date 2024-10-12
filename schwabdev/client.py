@@ -1,18 +1,14 @@
 """
-This file contains functions access the Schwab api
+This file contains functions to create a client class that accesses the Schwab api
 Coded by Tyler Bowers
 Github: https://github.com/tylerebowers/Schwab-API-Python
 """
 
-import json
-import time
-import base64
 import datetime
 import requests
-import threading
-import webbrowser
 import urllib.parse
 from .stream import Stream
+from .tokens import Tokens
 
 
 class Client:
@@ -32,216 +28,22 @@ class Client:
         :type timeout: int
         :param verbose: print extra information
         :type verbose: bool
-        :param show_linked: print linked accounts
-        :type show_linked: bool
+        :param update_tokens_auto: update tokens automatically
+        :type update_tokens_auto: bool
         """
 
-        if app_key is None:
-            raise Exception("app_key cannot be None.")
-        elif app_secret is None:
-            raise Exception("app_secret cannot be None.")
-        elif callback_url is None:
-            raise Exception("callback_url cannot be None.")
-        elif tokens_file is None:
-            raise Exception("tokens_file cannot be None.")
-        elif len(app_key) != 32 or len(app_secret) != 16:
-            raise Exception("App key or app secret invalid length.")
-        elif callback_url[0:5] != "https":
-            raise Exception("callback_url must be https.")
-        elif callback_url[-1] == "/":
-            raise Exception("callback_url cannot be path (ends with \"/\").")
-        elif tokens_file[-1] == '/':
-            raise Exception("Tokens file cannot be path.")
-        elif timeout <= 0:
-            raise Exception("Timeout must be greater than 0 and is recomended to be 5 seconds or more.")
+        if timeout <= 0:
+            raise Exception("Timeout must be greater than 0 and is recommended to be 5 seconds or more.")
 
-        self.version = "2.2.6"
-        self._app_key = app_key                   # app key credential
-        self._app_secret = app_secret             # app secret credential
-        self._callback_url = callback_url         # callback url to use
-        self.access_token = None                  # access token from auth
-        self.refresh_token = None                 # refresh token from auth
-        self.id_token = None                      # id token from auth
-        self._access_token_issued = None          # datetime of access token issue
-        self._refresh_token_issued = None         # datetime of refresh token issue
-        self._access_token_timeout = 1800         # in seconds (from schwab)
-        self._refresh_token_timeout = 7*24*60*60  # in seconds (from schwab)
-        self._tokens_file = tokens_file           # path to tokens file
+        self.version = "2.3.0"                    # version of the client
         self.timeout = timeout                    # timeout to use in requests
         self.verbose = verbose                    # verbose mode
+        self.tokens = Tokens(self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto=update_tokens_auto)
         self.stream = Stream(self)                # init the streaming object
-        self.awaiting_input = False               # whether we are awaiting user input
-
-        # Try to load tokens from the tokens file
-        at_issued, rt_issued, token_dictionary = self._read_tokens_file()
-        if None not in [at_issued, rt_issued, token_dictionary]:
-            # show user when tokens were last updated and when they will expire
-            self.access_token = token_dictionary.get("access_token")
-            self.refresh_token = token_dictionary.get("refresh_token")
-            self.id_token = token_dictionary.get("id_token")
-            self._access_token_issued = at_issued
-            self._refresh_token_issued = rt_issued
-            if self.verbose:
-                at_delta = self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).total_seconds()
-                print(f"[Schwabdev] Access token expires in {'-' if at_delta < 0 else ''}{int(abs(at_delta) / 3600):02}H:{int((abs(at_delta) % 3600) / 60):02}M:{int((abs(at_delta) % 60)):02}S")
-                rt_delta = self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).total_seconds()
-                print(f"[Schwabdev] Refresh token expires in {'-' if rt_delta < 0 else ''}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S")
-            # check if tokens need to be updated and update if needed
-            self.update_tokens()
-        else:
-            # The tokens file doesn't exist, so create it.
-            if self.verbose:
-                print(f"[Schwabdev] Token file does not exist or invalid formatting, creating \"{str(tokens_file)}\"")
-            open(self._tokens_file, 'w').close()
-            # Tokens must be updated.
-            self._update_refresh_token()
-
-        # Spawns a thread to check the access token and update if necessary
-        if update_tokens_auto:
-            def checker():
-                while True:
-                    self.update_tokens()
-                    time.sleep(30)
-            threading.Thread(target=checker, daemon=True).start()
-        elif self.verbose:
-            print("[Schwabdev] Warning: Tokens will not be updated automatically.")
 
         if self.verbose:
             print("[Schwabdev] Client Initialization Complete")
 
-    def update_tokens(self, force=False):
-        """
-        Checks if tokens need to be updated and updates if needed (only access token is automatically updated)
-        :param force: force update of refresh token (also updates access token)
-        :type force: bool
-        """
-        # refresh token notification
-        rt_delta = self._refresh_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._refresh_token_issued).total_seconds()
-        if rt_delta < 43200: # Start to ware the user if the refresh token will expire in less than 43200 = 12 hours
-            print(f"[Schwabdev] The refresh token will expire soon! ({'-' if rt_delta < 0 else ''}{int(abs(rt_delta) / 3600):02}H:{int((abs(rt_delta) % 3600) / 60):02}M:{int((abs(rt_delta) % 60)):02}S remaining)")
-
-        if (rt_delta < 3600) or force:  # check if we need to update refresh (and access) token
-            print("[Schwabdev] The refresh token has expired!")
-            self._update_refresh_token()
-        elif (self._access_token_timeout - (datetime.datetime.now(datetime.timezone.utc) - self._access_token_issued).total_seconds()) < 61:  # check if we need to update access token
-            if self.verbose: print("[Schwabdev] The access token has expired, updating automatically.")
-            self._update_access_token()
-
-    def update_tokens_auto(self):
-        import warnings
-        warnings.warn("update_tokens_auto() is deprecated and is now started by default when the client is created (if update_tokens_auto=True (default)).", DeprecationWarning, stacklevel=2)
-
-    def _update_access_token(self):
-        """
-        "refresh" the access token using the refresh token
-        """
-        # get the token dictionary (we will need to rewrite the file)
-        access_token_time_old, refresh_token_issued, token_dictionary_old = self._read_tokens_file()
-        # get new tokens
-        for i in range(3):
-            response = self._post_oauth_token('refresh_token', token_dictionary_old.get("refresh_token"))
-            if response.ok:
-                # get and update to the new access token
-                self._access_token_issued = datetime.datetime.now(datetime.timezone.utc)
-                self._refresh_token_issued = refresh_token_issued
-                new_td = response.json()
-                self.access_token = new_td.get("access_token")
-                self.refresh_token = new_td.get("refresh_token")
-                self.id_token = new_td.get("id_token")
-                self._write_tokens_file(self._access_token_issued, refresh_token_issued, new_td)
-                if self.verbose: # show user that we have updated the access token
-                    print(f"[Schwabdev] Access token updated: {self._access_token_issued}")
-                break
-            else:
-                print(response.text)
-                print(f"[Schwabdev] Could not get new access token ({i+1} of 3).")
-                time.sleep(10)
-
-    def _update_refresh_token(self):
-        """
-        Get new access and refresh tokens using authorization code.
-        """
-        self.awaiting_input = True # set flag since we are waiting for user input
-        # get authorization code (requires user to authorize)
-        #print("[Schwabdev] Please authorize this program to access your schwab account.")
-        auth_url = f'https://api.schwabapi.com/v1/oauth/authorize?client_id={self._app_key}&redirect_uri={self._callback_url}'
-        print(f"[Schwabdev] Open to authenticate: {auth_url}")
-        webbrowser.open(auth_url)
-        response_url = input("After authorizing, paste the address bar url here: ")
-        code = f"{response_url[response_url.index('code=') + 5:response_url.index('%40')]}@"  # session = responseURL[responseURL.index("session=")+8:]
-        # get new access and refresh tokens
-        response = self._post_oauth_token('authorization_code', code)
-        if response.ok:
-            # update token file and variables
-            self._access_token_issued = self._refresh_token_issued = datetime.datetime.now(datetime.timezone.utc)
-            new_td = response.json()
-            self.access_token = new_td.get("access_token")
-            self.refresh_token = new_td.get("refresh_token")
-            self.awaiting_input = False  # reset flag since tokens have been updated
-            self.id_token = new_td.get("id_token")
-            self._write_tokens_file(self._access_token_issued, self._refresh_token_issued, new_td)
-            if self.verbose: print("[Schwabdev] Refresh and Access tokens updated")
-        else:
-            print(response.text)
-            print("[Schwabdev] Could not get new refresh and access tokens, check these:\n    1. App status is "
-                  "\"Ready For Use\".\n    2. App key and app secret are valid.\n    3. You pasted the "
-                  "whole url within 30 seconds. (it has a quick expiration)")
-
-    def _post_oauth_token(self, grant_type: str, code: str):
-        """
-        Makes API calls for auth code and refresh tokens
-        :param grant_type: 'authorization_code' or 'refresh_token'
-        :type grant_type: str
-        :param code: authorization code
-        :type code: str
-        :return: response
-        :rtype: requests.Response
-        """
-        headers = {
-            'Authorization': f'Basic {base64.b64encode(bytes(f"{self._app_key}:{self._app_secret}", "utf-8")).decode("utf-8")}',
-            'Content-Type': 'application/x-www-form-urlencoded'}
-        if grant_type == 'authorization_code':  # gets access and refresh tokens using authorization code
-            data = {'grant_type': 'authorization_code', 'code': code,
-                    'redirect_uri': self._callback_url}
-        elif grant_type == 'refresh_token':  # refreshes the access token
-            data = {'grant_type': 'refresh_token', 'refresh_token': code}
-        else:
-            raise Exception("Invalid grant type; options are 'authorization_code' or 'refresh_token'")
-        return requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data)
-
-    def _write_tokens_file(self, at_issued: datetime, rt_issued: datetime, token_dictionary: dict):
-        """
-        Writes token file
-        :param at_issued: access token issued
-        :type at_issued: datetime.pyi
-        :param rt_issued: refresh token issued
-        :type rt_issued: datetime.pyi
-        :param token_dictionary: token dictionary
-        :type token_dictionary: dict
-        """
-        try:
-            with open(self._tokens_file, 'w') as f:
-                toWrite = {"access_token_issued": at_issued.isoformat(), "refresh_token_issued": rt_issued.isoformat(),
-                           "token_dictionary": token_dictionary}
-                json.dump(toWrite, f, ensure_ascii=False, indent=4)
-                f.flush()
-        except Exception as e:
-            print(e)
-
-
-    def _read_tokens_file(self):
-        """
-        Reads token file
-        :return: access token issued, refresh token issued, token dictionary
-        :rtype: datetime.pyi, datetime.pyi, dict
-        """
-        try:
-            with open(self._tokens_file, 'r') as f:
-                d = json.load(f)
-                return datetime.datetime.fromisoformat(d.get("access_token_issued")), datetime.datetime.fromisoformat(d.get("refresh_token_issued")), d.get("token_dictionary")
-        except Exception as e:
-            print(e)
-            return None, None, None
 
     def _params_parser(self, params: dict):
         """
@@ -268,7 +70,7 @@ class Client:
         if dt is None or isinstance(dt, str):
             return dt
         elif form == "8601":  # assume datetime object from here on
-            return f'{dt.isoformat()[:-9]}Z'
+            return f"{dt.isoformat().split('+')[0][:-3]}Z"
         elif form == "epoch":
             return int(dt.timestamp())
         elif form == "epoch_ms":
@@ -306,7 +108,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/accountNumbers',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             timeout=self.timeout)
 
     def account_details_all(self, fields: str = None) -> requests.Response:
@@ -318,7 +120,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
@@ -333,7 +135,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
@@ -354,7 +156,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders',
-                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.access_token}'},
+                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser(
                                 {'maxResults': maxResults, 'fromEnteredTime': self._time_convert(fromEnteredTime, "8601"),
                                  'toEnteredTime': self._time_convert(toEnteredTime, "8601"), 'status': status}),
@@ -371,7 +173,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.post(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders',
-                             headers={"Accept": "application/json", 'Authorization': f'Bearer {self.access_token}',
+                             headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}',
                                       "Content-Type": "application/json"},
                              json=order,
                              timeout=self.timeout)
@@ -387,7 +189,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             timeout=self.timeout)
 
     def order_cancel(self, accountHash: str, orderId: int | str) -> requests.Response:
@@ -401,7 +203,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.delete(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
-                               headers={'Authorization': f'Bearer {self.access_token}'},
+                               headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                                timeout=self.timeout)
 
     def order_replace(self, accountHash: str, orderId: int | str, order: dict) -> requests.Response:
@@ -417,7 +219,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.put(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
-                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.access_token}',
+                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}',
                                      "Content-Type": "application/json"},
                             json=order,
                             timeout=self.timeout)
@@ -437,7 +239,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/orders',
-                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.access_token}'},
+                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser(
                                 {'maxResults': maxResults, 'fromEnteredTime': self._time_convert(fromEnteredTime, "8601"),
                                  'toEnteredTime': self._time_convert(toEnteredTime, "8601"), 'status': status}),
@@ -447,7 +249,7 @@ class Client:
     def order_preview(self, accountHash, orderObject) -> requests.Response:
         #COMING SOON (waiting on Schwab)
         return requests.post(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/previewOrder',
-                             headers={'Authorization': f'Bearer {self.access_token}',
+                             headers={'Authorization': f'Bearer {self.tokens.access_token}',
                                       "Content-Type": "application.json"}, data=orderObject)
     """
 
@@ -467,7 +269,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser(
                                 {'accountNumber': accountHash, 'startDate': self._time_convert(startDate, "8601"),
                                  'endDate': self._time_convert(endDate, "8601"), 'symbol': symbol, 'types': types}),
@@ -484,7 +286,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions/{transactionId}',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params={'accountNumber': accountHash, 'transactionId': transactionId},
                             timeout=self.timeout)
 
@@ -495,7 +297,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/trader/v1/userPreference',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             timeout=self.timeout)
 
     """
@@ -515,7 +317,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/quotes',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser(
                                 {'symbols': self._format_list(symbols), 'fields': fields, 'indicative': indicative}),
                             timeout=self.timeout)
@@ -531,7 +333,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote_plus(symbol_id)}/quotes',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)
 
@@ -578,7 +380,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/chains',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser(
                                 {'symbol': symbol, 'contractType': contractType, 'strikeCount': strikeCount,
                                  'includeUnderlyingQuote': includeUnderlyingQuote, 'strategy': strategy,
@@ -597,7 +399,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/expirationchain',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'symbol': symbol}),
                             timeout=self.timeout)
 
@@ -627,7 +429,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/pricehistory',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'symbol': symbol, 'periodType': periodType, 'period': period,
                                                         'frequencyType': frequencyType, 'frequency': frequency,
                                                         'startDate': self._time_convert(startDate, 'epoch_ms'),
@@ -649,7 +451,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/movers/{symbol}',
-                            headers={"accept": "application/json", 'Authorization': f'Bearer {self.access_token}'},
+                            headers={"accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'sort': sort, 'frequency': frequency}),
                             timeout=self.timeout)
 
@@ -664,7 +466,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/markets',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser(
                                 {'markets': symbols, #self._format_list(symbols),
                                  'date': self._time_convert(date, 'YYYY-MM-DD')}),
@@ -681,7 +483,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/markets/{market_id}',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
                             timeout=self.timeout)
 
@@ -696,7 +498,7 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/instruments',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params={'symbol': symbol, 'projection': projection},
                             timeout=self.timeout)
 
@@ -709,5 +511,5 @@ class Client:
         :rtype: request.Response
         """
         return requests.get(f'{self._base_api_url}/marketdata/v1/instruments/{cusip_id}',
-                            headers={'Authorization': f'Bearer {self.access_token}'},
+                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             timeout=self.timeout)

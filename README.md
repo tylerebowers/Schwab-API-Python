@@ -9,12 +9,12 @@ This is an unofficial python program to access the Schwab api.
 
 ## Quick setup
 1. Setup your Schwab developer account [here](https://beta-developer.schwab.com/).
-   - Create a new Schwab individual developer app with callback url "https://127.0.0.1" (case sensitive) 
-   - Add both API products to your app: "Accounts and Trading Production" and "Market Data Production".  
-   - Wait until the status is "Ready for use", note that "Approved - Pending" will not work.
+   - Create a new Schwab individual developer app with callback url "https://127.0.0.1"
+   - Make a new app with **both** API products: "Accounts and Trading Production" and "Market Data Production".  
+   - Wait until the app status is "Ready for use", note that "Approved - Pending" will not work.
    - Enable TOS (Thinkorswim) for your Schwab account, it is needed for orders and other api calls.
 2. Install packages
-   - Install schwabdev and requirements `pip install schwabdev`
+   - Install schwabdev `pip install schwabdev`
    - *You may need to use `pip3` instead of `pip`*
 3. Examples on how to use the client are in the `examples/` folder (add your keys in the .env file)  
    - The first time you run you will have to sign in to your Schwab account using the generated link in the terminal. 
@@ -29,16 +29,18 @@ print(client.account_linked().json()) #make api calls
 ```
 
 ## What can this program do?
- - Authenticate and access the api 
- - Auto "access token" updates.
+ - Authenticate and access the full api. 
+ - Automatic token management and "access token" updates.
  - Functions for all api functions (examples in `examples/api_demo.py`)
  - Stream real-time data with a customizable response handler (examples in `examples/stream_demo.py`)
  ### TBD 
  - Paper trading client
  - Automatic refresh token updates. (Waiting for Schwab implementation)
 ### Notes
-The schwabdev folder contains code for main operations:     
- - `api.py` contains functions relating to api calls, requests, and automatic token checker threads.
+The schwabdev folder contains code for main operations:   
+ - `__init__.py` linker to client class.
+ - `client.py` contains functions relating to api calls and requests.
+ - `tokens.py` contains functions relating to token management.
  - `stream.py` contains functions for streaming data from websockets.
 
 ## Youtube Tutorials

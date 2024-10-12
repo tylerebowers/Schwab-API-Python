@@ -62,7 +62,7 @@ class Stream:
                     # send login payload
                     login_payload = self.basic_request(service="ADMIN",
                                                        command="LOGIN",
-                                                       parameters={"Authorization": self._client.access_token,
+                                                       parameters={"Authorization": self._client.tokens.access_token,
                                                                    "SchwabClientChannel": self._streamer_info.get("schwabClientChannel"),
                                                                    "SchwabClientFunctionId": self._streamer_info.get("schwabClientFunctionId")})
                     await self._websocket.send(json.dumps(login_payload))

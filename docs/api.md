@@ -145,7 +145,7 @@ You can also reference the [schwab documentation](https://developer.schwab.com/p
 > Syntax: `client.option_chains(symbol, contractType=None, strikeCount=None, includeUnderlyingQuote=None, strategy=None,
                interval=None, strike=None, range=None, fromDate=None, toDate=None, volatility=None, underlyingPrice=None,
                interestRate=None, daysToExpiration=None, expMonth=None, optionType=None, entitlement=None)`  
-> * Param symbol(str): symbol to get option chain for. i.e. "AAPL"   
+> * Param symbol(str): symbol to get option chain for. i.e. "AAPL" "$SPX"  
 > * Param contractType(str): contract type to get option chain for. Options "ALL", "CALL", "PUT"  
 > * Param strikeCount(int): number of strikes to get option chain for.   
 > * Param includeUnderlyingQuote(bool): include underlying quote in option chain.   
