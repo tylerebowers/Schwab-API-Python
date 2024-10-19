@@ -35,6 +35,12 @@ If you want to manually control token updating (e.g. you want to "catch" the cal
 
 ## Common Issues
 
+> Problem: unauthorized error `{'errors': [{'id': 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX', 'status': 401, 'title': 'Unauthorized', 'detail': 'Client not authorized'}]}`  
+> Cause: You do not have access to both APIs and are attempting to access one that you have not added to your app.  
+> Fix: Add both APIs "Accounts and Trading Production" and "Market Data Production" to your app.  
+> Cause: The access token is expired, sometimes Schwab invalidates tokens when they make backend changes.  
+> Fix: Manually update access token by changing the date in `tokens.json` or update both tokens by calling `client.tokens.update_tokens(force=True)`
+
 > Problem: Trying to sign into account and get error message: "We are unable to complete your request. Please contact customer service for further assistance."  
 > Problem: "Whitelabel Error Page This application has no configured error view, so you are seeing this as a fallback." (status=500)  
 > Fix: Your app is "Approved - Pending", you must wait for status "Ready for Use".  
@@ -50,14 +56,14 @@ If you want to manually control token updating (e.g. you want to "catch" the cal
 > Problem: "{"error":"unsupported_token_type","error_description":"400 Bad Request: \"{\"error_description\":\"Exception while authenticating refresh token..."  
 > Problem: "Could not get new access token (1 of 3)." (or x of 3 etc)  
 > Cause: Your refresh token is invalid (maybe you created a new refresh token on a different machine).  
-> Fix: Manually update refresh token by changing the date in `tokens.json` or by calling `client.update_tokens(force=True)`
+> Fix: Manually update refresh token by changing the date in `tokens.json` or by calling `client.tokens.update_tokens(force=True)`
 
 > Problem: "can't register atexit after shutdown"  
 > Cause: The main thread dies before the stream thread starts  
 > Fix: Add a delay after starting or sending a request, something to let the stream thread start up before the main thread closes.
 
 > Problem: API calls throwing errors despite access token and refresh token being valid / not expired.  
-> Fix: Manually update refresh / access tokens by calling `client.update_tokens(force=True)`; You can also delete the tokens.json file.
+> Fix: Manually update refresh / access tokens by calling `client.tokens.update_tokens(force=True)`; You can also delete the tokens.json file.
 
 > Problem: Streaming ACCT_ACTIVITY yields no responses.   
 > Fix: This is a known issue on Schwab's end.
