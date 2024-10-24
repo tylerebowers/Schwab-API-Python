@@ -19,18 +19,21 @@ streamer.start(my_handler)
 ```
 In the above example, the `my_handler` function is called whenever a response is received from the stream, and prints "TEST" prefixed with the response to the terminal. It is important to code this function such that it is not too taxing on the system as we dont want the response handler to run behind the streamer. You can also pass in variables, args and/or kwargs, into the start function which will be passed to the `my_handler` function.  
 ### Starting the stream automatically
-If you want to start the streamer automatically when the market opens then instead of `streamer.start()` use the call `streamer.start_automatic(receiver=print, after_hours=False, pre_hours=False)`, shown are the default values. If you want to stream after or pre-markt hours then set the respective variables. Starting the stream automatically will preserve the previous subscriptions.
+If you want to start the streamer automatically when the market opens then instead of `streamer.start()` use the call `streamer.start_automatic(receiver=print, start_time=..., stop_time=..., daemon=True)`, shown are the default values which will start & stop the streamer during normal market hours (9:30am-4:00pm). If you want to start and/or stop the streamer at specific times then set the `start_time` and `stop_time` parameters to `datetime.datetime.time(HH,MM,SS, tzinfo=datetime.timezone.utc)`, times are in UTC; You can also change the days when the streamer starts by adding a list or set of ints to the `on_days` parameter, the default (Mon-Fri) is `on_days=(0,1,2,3,4)`. Starting the stream automatically will preserve the previous subscriptions.
 ### Stopping the stream
 To stop the streamer use `streamer.stop()`, pass the parameter `clear_subscriptions=False` (default: true) if you want to keep the recorded subscriptions -> this means that the next time you start the steam it will resubscribe to the previous subscriptions (except if program is restarted).
 ### Sending stream requests
-Sending in requests to the streamer can be done using the `streamer.send(message)` function. Schwabdev offers shortcut functions for all streamable assets (covered below), to subscribe to an equity pass in `streamer.level_one_equities(...)` to the send function. Important: "0" must always be included in the fields.
+Sending in requests to the streamer can be done using the `streamer.send(message)` function. Schwabdev offers shortcut functions for **all** streamable assets (covered below), to subscribe to an equity, pass in `streamer.level_one_equities(...)` to the send function. Important: "0" must always be included in the fields. Shown here is every way to use the shortcut functions:
 ```py
-#subscribing to fields 0,1,2,3 for equities "AMD" and "INTC"
+# Every way to subscribe to the fields 0,1,2,3 for equities "AMD" and "INTC"
 streamer.send(streamer.level_one_equities("AMD,INTC", "0,1,2,3"))
+streamer.send(streamer.level_one_equities(["AMD","INTC"], ["0","1","2","3"]))
+streamer.send(streamer.level_one_equities("AMD,INTC", "0,1,2,3", command="ADD"))
+streamer.send(streamer.basic_request("LEVELONE_EQUITIES", "ADD", parameters={"keys": "AMD,INTC", "fields": "0,1,2,3"}))
 ```
 If you are using an async function, then sending asyncronous requests to the streamer can be done using the `streamer.send_async(message)` function. 
 ```py
-#subscribing to fields 0,1,2,3 for equities "AMD" and "INTC"
+# Asyncronous subscription request for fields 0,1,2,3 of equities "AMD" and "INTC"
 await streamer.send_async(streamer.level_one_equities("AMD,INTC", "0,1,2,3"))
 ```
 ## Streamable assets

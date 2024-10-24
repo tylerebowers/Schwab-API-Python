@@ -4,6 +4,7 @@ Coded by Tyler Bowers
 Github: https://github.com/tylerebowers/Schwab-API-Python
 """
 
+import logging
 import datetime
 import requests
 import urllib.parse
@@ -13,7 +14,7 @@ from .tokens import Tokens
 
 class Client:
 
-    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, verbose=False, update_tokens_auto=True):
+    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, update_tokens_auto=True):
         """
         Initialize a client to access the Schwab API.
         :param app_key: app key credentials
@@ -26,8 +27,6 @@ class Client:
         :type tokens_file: str
         :param timeout: request timeout
         :type timeout: int
-        :param verbose: print extra information
-        :type verbose: bool
         :param update_tokens_auto: update tokens automatically
         :type update_tokens_auto: bool
         """
@@ -35,14 +34,13 @@ class Client:
         if timeout <= 0:
             raise Exception("Timeout must be greater than 0 and is recommended to be 5 seconds or more.")
 
-        self.version = "2.3.0"                    # version of the client
-        self.timeout = timeout                    # timeout to use in requests
-        self.verbose = verbose                    # verbose mode
-        self.tokens = Tokens(self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto=update_tokens_auto)
-        self.stream = Stream(self)                # init the streaming object
+        self.version = "Schwabdev 2.4.0"                        # version of the client
+        self.timeout = timeout                                  # timeout to use in requests
+        self.tokens = Tokens(self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto)
+        self.stream = Stream(self)                              # init the streaming object
+        self._logger = logging.getLogger("Schwabdev.Client")    # init the logger
 
-        if self.verbose:
-            print("[Schwabdev] Client Initialization Complete")
+        self._logger.info("Client Initialization Complete")
 
 
     def _params_parser(self, params: dict):
@@ -67,7 +65,7 @@ class Client:
         :return: converted time or passthrough
         :rtype: str | None
         """
-        if dt is None or isinstance(dt, str):
+        if dt is None or not isinstance(dt, datetime.datetime):
             return dt
         elif form == "8601":  # assume datetime object from here on
             return f"{dt.isoformat().split('+')[0][:-3]}Z"
@@ -90,7 +88,7 @@ class Client:
         """
         if l is None:
             return None
-        elif type(l) is list:
+        elif isinstance(l, list):
             return ",".join(l)
         else:
             return l
@@ -415,7 +413,7 @@ class Client:
         :type period: int
         :param frequencyType: frequency type ("minute"|"daily"|"weekly"|"monthly")
         :type frequencyType: str
-        :param frequency: frequency (1|5|10|15|30)
+        :param frequency: frequency (frequencyType: options), (minute: 1, 5, 10, 15, 30), (daily: 1), (weekly: 1), (monthly: 1)
         :type frequency: int
         :param startDate: start date
         :type startDate: datetime.pyi | str

@@ -2,8 +2,9 @@
 This file contains examples for stream request.
 """
 
-import schwabdev
 from dotenv import load_dotenv
+import schwabdev
+import logging
 import os
 
 
@@ -11,7 +12,10 @@ def main():
     # place your app key and app secret in the .env file
     load_dotenv()  # load environment variables from .env file
 
-    client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'), verbose=True)
+    # set logging level
+    logging.basicConfig(level=logging.INFO)
+
+    client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'))
 
     # define a variable for the steamer:
     streamer = client.stream
@@ -42,6 +46,7 @@ def main():
 
 
     # streamer.send(streamer.level_one_options("GOOGL 240712C00200000", "0,1,2,3,4,5,6,7,8")) # key must be from option chains api call.
+    # streamer.send(streamer.level_one_options("SPY   241014C00580000", "0,1,2,3,4,5,6,7,8"))
 
     streamer.send(streamer.level_one_futures("/ES", "0,1,2,3,4,5,6"))
 

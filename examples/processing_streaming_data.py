@@ -3,18 +3,22 @@ This file is an example of how to process streaming data.
 While you can process completely in the response handler this could leave the stream with a backlog.
 The preferred method is to use a shared list, shown here as "shared_list"
 """
+from datetime import datetime
 import schwabdev
-import os
+import logging
 import dotenv
 import time
 import json
-from datetime import datetime
+import os
 
 #load environment
 dotenv.load_dotenv()
 
+# set logging level
+logging.basicConfig(level=logging.INFO)
+
 # make a client
-client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'), verbose=True)
+client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'))
 streamer = client.stream
 
 #define a response handler

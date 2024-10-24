@@ -8,11 +8,11 @@ import json
 import atexit
 import asyncio
 import datetime
+import logging
 import threading
 import websockets
 from time import sleep
 import websockets.exceptions
-
 
 class Stream:
 
@@ -22,13 +22,15 @@ class Stream:
         :param client: Client object
         :type client: Client
         """
-        self._websocket = None          # the websocket
-        self._streamer_info = None      # streamer info from api call
-        self._request_id = 0            # a counter for the request id
-        self.active = False             # whether the stream is active
-        self._thread = None             # the thread that runs the stream
-        self._client = client           # so we can get streamer info
-        self.subscriptions = {}         # a dictionary of subscriptions
+        self._websocket = None                                  # the websocket
+        self._streamer_info = None                              # streamer info from api call
+        self._request_id = 0                                    # a counter for the request id
+        self.active = False                                     # whether the stream is active
+        self._thread = None                                     # the thread that runs the stream
+        self._client = client                                   # so we can get streamer info
+        self.subscriptions = {}                                 # a dictionary of subscriptions
+        self._logger = logging.getLogger('Schwabdev.Stream')    # init the logger
+        self.backoff_time = 2.0                                 # default backoff time (time to wait before retrying)
 
         # register atexit to stop the stream (if active)
         def stop_atexit():
@@ -48,7 +50,7 @@ class Stream:
         if response.ok:
             self._streamer_info = response.json().get('streamerInfo', None)[0]
         else:
-            print("[Schwabdev] Could not get streamerInfo")
+            self._logger.error("Could not get streamerInfo")
             return
 
         # start the stream
@@ -56,9 +58,9 @@ class Stream:
         while True:
             try:
                 start_time = datetime.datetime.now(datetime.timezone.utc)
-                if self._client.verbose: print("[Schwabdev] Connecting to streaming server...")
-                async with websockets.connect(self._streamer_info.get('streamerSocketUrl'), ping_interval=None) as self._websocket:
-                    if self._client.verbose: print("[Schwabdev] Connected to streaming server.")
+                self._logger.info("Connecting to streaming server...")
+                async with websockets.connect(self._streamer_info.get('streamerSocketUrl'), ping_interval=20) as self._websocket:
+                    self._logger.debug("Connected to streaming server.")
                     # send login payload
                     login_payload = self.basic_request(service="ADMIN",
                                                        command="LOGIN",
@@ -85,19 +87,32 @@ class Stream:
                     while True:
                         receiver_func(await self._websocket.recv(), **kwargs)
 
-            except Exception as e:
+            except websockets.exceptions.ConnectionClosedOK as e: # "received 1000 (OK); then sent 1000 (OK)"
                 self.active = False
-                if e is websockets.exceptions.ConnectionClosedOK or str(e) == "received 1000 (OK); then sent 1000 (OK)":  # catch logout request
-                    if self._client.verbose: print("[Schwabdev] Stream connection closed.")
+                self._logger.info("Stream connection closed.")
+                break
+            except websockets.exceptions.ConnectionClosedError as e: # lost internet connection
+                self.active = False
+                self._logger.error(e)
+                if (datetime.datetime.now(datetime.timezone.utc).timestamp() - start_time.timestamp()) <= 90:
+                    self._logger.warning(f"Stream has crashed within 90 seconds, likely no subscriptions, invalid login, or lost connection (not restarting).")
                     break
-                elif e is websockets.exceptions.ConnectionClosedError or str(e) == "no close frame received or sent":  # catch no subscriptions kick
-                    print(f"[Schwabdev] Stream connection closed (likely no subscriptions): {e}")
-                    break
-                elif (datetime.datetime.now(datetime.timezone.utc) - start_time).seconds <= 90:
-                    print(f"[Schwabdev] Stream has crashed within 90 seconds ({e}), likely no subscriptions, invalid login, or lost connection (not restarting).")
-                    break
-                else: # stream has quit unexpectedly, try to reconnect
-                    print(f"[Schwabdev] Stream connection lost to server ({e}), reconnecting...")
+                self._logger.error(f"Stream connection Error. Reconnecting in {self.backoff_time} seconds...")
+                self._wait_for_backoff()
+            except Exception as e:  # stream has quit unexpectedly, try to reconnect
+                self.active = False
+                self._logger.error(e)
+                self._logger.warning(f"Stream connection lost to server, reconnecting...")
+                self._wait_for_backoff()
+
+
+    def _wait_for_backoff(self):
+        """
+        Wait for the backoff time
+        """
+        sleep(self.backoff_time)
+        # exponential backoff and cap at 128s
+        self.backoff_time = min(self.backoff_time * 2, 128)
 
     def start(self, receiver=print, daemon: bool = True, **kwargs):
         """
@@ -115,42 +130,47 @@ class Stream:
             self._thread.start()
             # if the thread does not start in time then the main program may close before the streamer starts
         else:
-            if self._client.verbose: print("[Schwabdev] Stream already active.")
+            self._logger.warning("Stream already active.")
 
-    def start_auto(self, receiver=print, after_hours=False, pre_hours=False, daemon: bool = True, **kwargs):
+    def start_auto(self, receiver=print, start_time: datetime.datetime.time = datetime.time(13, 29, 0, tzinfo=datetime.timezone.utc),
+                   stop_time: datetime.datetime.time = datetime.time(20, 0, 0, tzinfo=datetime.timezone.utc), on_days: list[int] = (0,1,2,3,4), daemon: bool = True, **kwargs):
         """
         Start the stream automatically at market open and close, will NOT erase subscriptions
         :param receiver: function to call when data is received
         :type receiver: function
-        :param after_hours: include after hours trading
-        :type after_hours: bool
-        :param pre_hours: include pre hours trading
-        :type pre_hours: bool
+        :param start_time: time to start the stream in UTC, must be later than datetime.time.min
+        :type start_time: bool
+        :param stop_time: time to stop the stream in UTC, must be earlier than datetime.time.max
+        :type stop_time: bool
+        :param on_days: day(s) to start the stream default: (0,1,2,3,4) = Mon-Fri, (0 = Monday, ..., 6 = Sunday)
+        :type on_days: list(int) | set(int)
+        :param daemon: whether to run the thread as a daemon
+        :type daemon: bool
         """
-        start = datetime.time(13, 29, 0, tzinfo=datetime.timezone.utc)  # market opens at 9:30 ET
-        end = datetime.time(20, 0, 0, tzinfo=datetime.timezone.utc)  # market closes at 4:00 ET
-        if pre_hours:
-            start = datetime.time(10, 59, 0, tzinfo=datetime.timezone.utc)
-        if after_hours:
-            end = datetime.time.max.replace(tzinfo=datetime.timezone.utc) # 23:59:59:999999
+        #start_time = datetime.time(13, 29, 0, tzinfo=datetime.timezone.utc)  # market opens at 9:30 ET
+        #stop_time = datetime.time(20, 0, 0, tzinfo=datetime.timezone.utc)  # market closes at 4:00 ET
+        #pre_hours: start_time = datetime.time(10, 59, 0, tzinfo=datetime.timezone.utc)
+        #after_hours: stop_time = datetime.time.max.replace(tzinfo=datetime.timezone.utc) # 23:59:59:999999
+        start_time = start_time.replace(tzinfo=datetime.timezone.utc)
+        stop_time = stop_time.replace(tzinfo=datetime.timezone.utc)
         def checker():
 
             while True:
                 now = datetime.datetime.now(datetime.timezone.utc)
-                in_hours = (start <= now.time().replace(tzinfo=datetime.timezone.utc) <= end) and (0 <= now.weekday() <= 4)
+                in_hours = (start_time <= now.time().replace(tzinfo=datetime.timezone.utc) <= stop_time) and (now.weekday() in on_days)
                 if in_hours and not self.active:
                     if len(self.subscriptions) == 0:
-                        if self._client.verbose: print("[Schwabdev] No subscriptions, starting stream anyways.")
+                        self._logger.warning("No subscriptions, starting stream anyways.")
                     self.start(receiver=receiver, daemon=daemon, **kwargs)
                 elif not in_hours and self.active:
-                    if self._client.verbose: print("[Schwabdev] Stopping Stream.")
+                    self._logger.info("Stopping Stream.")
                     self.stop(clear_subscriptions=False)
                 sleep(30)
 
         threading.Thread(target=checker, daemon=daemon).start()
 
-        if not start <= datetime.datetime.now(datetime.timezone.utc).time().replace(tzinfo=datetime.timezone.utc) <= end:
-            print("[Schwabdev] Stream was started outside of active hours and will launch when in hours.")
+        if not start_time <= datetime.datetime.now(datetime.timezone.utc).time().replace(tzinfo=datetime.timezone.utc) <= stop_time:
+            self._logger.info("Stream was started outside of active hours and will launch when in hours.")
 
     def _record_request(self, request: dict):
         """
@@ -196,24 +216,8 @@ class Stream:
         :param requests: list of requests or a single request
         :type requests: list | dict
         """
-        # an async function to send the request
-        async def _send(to_send):
-            await self._websocket.send(to_send)
-
-        # make sure requests is a list
-        if type(requests) is not list:
-            requests = [requests]
-
-        # add requests to list of subscriptions
-        for request in requests:
-            self._record_request(request)
-
-        # send the request if the stream is active, queue otherwise
-        if self.active:
-            to_send = json.dumps({"requests": requests})
-            asyncio.run(_send(to_send))
-        else:
-            if self._client.verbose: print("[Schwabdev] Stream is not active, request queued.")
+        # send the request using the async function
+        asyncio.run(self.send_async(requests))
 
 
     async def send_async(self, requests: list | dict):
@@ -227,7 +231,7 @@ class Stream:
         if type(requests) is not list:
             requests = [requests]
 
-        # add requests to list of subscriptions
+        # add requests to list of subscriptions (acts as a queue before stream started)
         for request in requests:
             self._record_request(request)
 
@@ -236,7 +240,7 @@ class Stream:
             to_send = json.dumps({"requests": requests})
             await self._websocket.send(to_send)
         else:
-            if self._client.verbose: print("[Schwabdev] Stream is not active, request queued.")
+            self._logger.info("Stream is not active, request queued.")
 
 
     def stop(self, clear_subscriptions: bool = True):
@@ -247,7 +251,6 @@ class Stream:
         """
         if clear_subscriptions:
             self.subscriptions = {}
-        self._request_id += 1
         self.send(self.basic_request(service="ADMIN", command="LOGOUT"))
         self.active = False
 
@@ -268,7 +271,7 @@ class Stream:
             if response.ok:
                 self._streamer_info = response.json().get('streamerInfo', None)[0]
             else:
-                print("[Schwabdev] Could not use/get streamerInfo")
+                self._logger.error("Could not use/get streamerInfo")
                 return {}
 
         # remove None parameters
@@ -286,16 +289,17 @@ class Stream:
         return request
 
     @staticmethod
-    def _list_to_string(ls: list | str):
+    def _list_to_string(ls: list | str | tuple | set):
         """
         Convert a list to a string (e.g. [1, "B", 3] -> "1,B,3"), or passthrough if already a string
         :param ls: list to convert
-        :type ls: list | str
+        :type ls: list | str | tuple | set
         :return: converted string
         :rtype: str
         """
-        if type(ls) is str: return ls
-        elif type(ls) is list: return ",".join(map(str, ls))
+        if isinstance(ls, str): return ls
+        elif hasattr(ls, '__iter__'): return ",".join(map(str, ls)) # yes, this is true for string too but those are caught first
+        else: return str(ls)
 
     def level_one_equities(self, keys: str | list, fields: str | list, command: str = "ADD") -> dict:
         """

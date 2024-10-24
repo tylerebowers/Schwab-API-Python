@@ -1,6 +1,7 @@
 # Schwab-API-Python
 ![PyPI - Version](https://img.shields.io/pypi/v/schwabdev) ![Discord](https://img.shields.io/discord/1076596998150561873?logo=discord) ![PyPI - Downloads](https://img.shields.io/pypi/dm/schwabdev) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?business=8VDFKHMBFSC2Q&no_recurring=0&currency_code=USD) ![YouTube Video Views](https://img.shields.io/youtube/views/kHbom0KIJwc?style=flat&logo=youtube)  
-This is an unofficial python program to access the Schwab api.  
+This package is not affiliated with or endorsed by Schwab, it is maintained by [Tyler Bowers](https://github.com/tylerebowers) & Contributors.   
+It is licensed under the MIT license, and acts in accordance with Schwab's API terms and conditions.  
 [Discord](https://discord.gg/m7SSjr9rs9), [PyPI](https://pypi.org/project/schwabdev/), [Youtube](https://youtube.com/playlist?list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8), [Github](https://github.com/tylerebowers/Schwab-API-Python).
 
 ## Installation 
@@ -34,7 +35,7 @@ print(client.account_linked().json()) #make api calls
  - Functions for all api functions (examples in `examples/api_demo.py`)
  - Stream real-time data with a customizable response handler (examples in `examples/stream_demo.py`)
  ### TBD 
- - Paper trading client
+ - ~~Paper trading client~~
  - Automatic refresh token updates. (Waiting for Schwab implementation)
 ### Notes
 The schwabdev folder contains code for main operations:   

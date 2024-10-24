@@ -23,6 +23,9 @@ Now lets look at all of the parameters that can be passed to the client construc
 > * Param verbose(bool): verbose (print extra information that isn't neccessary).  
 > * Param update_tokens_auto(bool): thread that checks/updates the access token and refresh token (requires user input for refresh token).
 
+Schwabdev now uses the logging module to log/print information, warnings and errors. You can change the level of logging by setting `logging.basicConfig(level=logging.XXXX)` where `XXXX` is the level of logging you want such as `INFO` or `WARNING`.
+
+Schwabdev can also capture the callback urls, so you dont have to copy/paste. If you use a callback url such as `https://127.0.0.1:7777` then Schwabdev will listen on port 7777 and capture the callback url after you have signed in your account. You may get a warning "net::ERR_CERT_AUTHORITY_INVALID" since it is a self-signed certificate but this is not an issue, just click "Advanced" -> "Proceed to ..." to send the code to Schwabdev (usually only warns the first time). If you still want to copy/paste then remove the port from your callback url.
 
 The Schwab API uses two tokens to use the api:
 * Refresh token - valid for 7 days, used to "refresh" the access token.
@@ -31,7 +34,7 @@ The Schwab API uses two tokens to use the api:
 If you want to access the access or refresh tokens you can call `client.tokens.access_token` or `client.tokens.refresh_token`.  
 The access token can be easily updated/refreshed assuming that the refresh token is valid, getting a new refresh token, however, requires user input. It is recommended force-update the refresh token during weekends so it is valid during the week, this can be done with the call: `client.tokens.update_tokens(force=True)`, or by changing the date in `tokens.json`.
 
-If you want to manually control token updating (e.g. you want to "catch" the callback url after signing in, or you are using schwabdev in a webapp) then you might want to set `update_tokens_auto=False` during client creation and have your own thread that updates the tokens. Make a copy of the `client.tokens.update_tokens(...)` method (in tokens.py) which you will call in a daemon threaded loop (look at the `checker(self)` thread in the `__init__` function of `tokens.py`) .You'll still want to use `client.tokens.update_access_token()` for the access tokens, however, you will want to change `client.tokens.update_refresh_token()` for the refresh tokens. To get the auth url call `client.tokens.get_refresh_token_auth_url()`, after the user authenticates with that link you get the callback url with code. Either the whole url (starting at https://...) or just the code can be sent to the `client.tokens.update_refresh_token_from_code(<url or code>)` method which will update the refresh token (and access token).
+If you want to manually control token updating then you can set `update_tokens_auto=False` during client creation and have your own thread that updates the tokens. Look at the `client.tokens.update_tokens(...)` method (in tokens.py). Essentially you want to keep the access token and refresh tokens valid, you can probably use `client.tokens.update_access_token` directly and make your own `client.tokens.update_refresh_token` function. Keep in mind that Schwabdev can also listen on a port and capture the callback url, you could use a different port for the callback and let Schwabdev listen on it.
 
 ## Common Issues
 
