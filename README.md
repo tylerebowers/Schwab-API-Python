@@ -31,12 +31,13 @@ print(client.account_linked().json()) #make api calls
 
 ## What can this program do?
  - Authenticate and access the full api. 
- - Automatic token management and "access token" updates.
+ - Automatic token management and "access token" refreshes.
  - Functions for all api functions (examples in `examples/api_demo.py`)
  - Stream real-time data with a customizable response handler (examples in `examples/stream_demo.py`)
- ### TBD 
- - ~~Paper trading client~~
- - Automatic refresh token updates. (Waiting for Schwab implementation)
+ - Option for capture of callback urls when callback has a port (starts webserver on this port).
+ - Option for automatic starting/stopping of streamer when market opens/closes.
+ - Streaming stability with automatic restarts if the streamer crashes.
+
 ### Notes
 The schwabdev folder contains code for main operations:   
  - `__init__.py` linker to client class.
@@ -45,8 +46,9 @@ The schwabdev folder contains code for main operations:
  - `stream.py` contains functions for streaming data from websockets.
 
 ## Youtube Tutorials
-1. [Authentication and Requests](https://www.youtube.com/watch?v=kHbom0KIJwc&ab_channel=TylerBowers) *Github code has significantly changed since this video*
-2. [Streaming Real-time Data](https://www.youtube.com/watch?v=t7F2dUecgWc&list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8&index=2&ab_channel=TylerBowers)
+*Github code has changed since these videos*
+1. [Authentication and Requests](https://www.youtube.com/watch?v=kHbom0KIJwc&ab_channel=TylerBowers) 
+2. [Streaming Real-time Data](https://www.youtube.com/watch?v=t7F2dUecgWc&list=PLs4JLWxBQIxpbvCj__DjAc0RRTlBz-TR8&index=2&ab_channel=TylerBowers) 
 
 ## MIT License
 

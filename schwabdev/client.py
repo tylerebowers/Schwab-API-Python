@@ -34,7 +34,7 @@ class Client:
         if timeout <= 0:
             raise Exception("Timeout must be greater than 0 and is recommended to be 5 seconds or more.")
 
-        self.version = "Schwabdev 2.4.0"                        # version of the client
+        self.version = "Schwabdev 2.4.2"                        # version of the client
         self.timeout = timeout                                  # timeout to use in requests
         self.tokens = Tokens(self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto)
         self.stream = Stream(self)                              # init the streaming object
@@ -330,7 +330,7 @@ class Client:
         :return: quote for a single symbol
         :rtype: request.Response
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote_plus(symbol_id)}/quotes',
+        return requests.get(f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote(symbol_id,safe="")}/quotes',
                             headers={'Authorization': f'Bearer {self.tokens.access_token}'},
                             params=self._params_parser({'fields': fields}),
                             timeout=self.timeout)

@@ -60,7 +60,7 @@ class Stream:
                 start_time = datetime.datetime.now(datetime.timezone.utc)
                 self._logger.info("Connecting to streaming server...")
                 async with websockets.connect(self._streamer_info.get('streamerSocketUrl'), ping_interval=20) as self._websocket:
-                    self._logger.debug("Connected to streaming server.")
+                    self._logger.info("Connected to streaming server.")
                     # send login payload
                     login_payload = self.basic_request(service="ADMIN",
                                                        command="LOGIN",
