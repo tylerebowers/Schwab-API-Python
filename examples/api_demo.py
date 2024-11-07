@@ -36,7 +36,7 @@ def main():
 
     # get orders for a linked account
     print("\nGet orders for a linked account")
-    print(client.account_orders(account_hash, datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30), datetime.datetime.now(datetime.timezone.utc)).json())
+    print(client.account_orders(account_hash, maxResults=3000, fromEnteredTime=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30), toEnteredTime=datetime.datetime.now(datetime.timezone.utc)).json())
     sleep(3)
 
     # place an order, get the details, then cancel it (uncomment to test)
@@ -77,8 +77,7 @@ def main():
     """
 
     print("\nGet up to 3000 orders for all accounts for the past 30 days")
-    print(client.account_orders_all(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
-                                    datetime.datetime.now(datetime.timezone.utc)).json())
+    print(client.account_orders_all(maxResults=3000, fromEnteredTime=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30), toEnteredTime=datetime.datetime.now(datetime.timezone.utc)).json())
     sleep(3)
 
     # preview order (not implemented by Schwab yet)
