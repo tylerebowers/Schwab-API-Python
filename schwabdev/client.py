@@ -68,7 +68,7 @@ class Client:
         if dt is None or not isinstance(dt, datetime.datetime):
             return dt
         elif form == "8601":  # assume datetime object from here on
-            return f"{dt.isoformat().split('+')[0][:-3]}Z"
+            return dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
         elif form == "epoch":
             return int(dt.timestamp())
         elif form == "epoch_ms":
