@@ -34,6 +34,7 @@ print(client.account_linked().json()) #make api calls
  - Automatic token management and "access token" refreshes.
  - Functions for all api functions (examples in `examples/api_demo.py`)
  - Stream real-time data with a customizable response handler (examples in `examples/stream_demo.py`)
+ - Place orders and get order details (examples in `examples/orders_demo.py`)
  - Option for capture of callback urls when callback has a port (starts webserver on this port).
  - Option for automatic starting/stopping of streamer when market opens/closes.
  - Streaming stability with automatic restarts if the streamer crashes.

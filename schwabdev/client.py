@@ -34,7 +34,7 @@ class Client:
         if timeout <= 0:
             raise Exception("Timeout must be greater than 0 and is recommended to be 5 seconds or more.")
 
-        self.version = "Schwabdev 2.4.2"                        # version of the client
+        self.version = "Schwabdev 2.4.4"                        # version of the client
         self.timeout = timeout                                  # timeout to use in requests
         self.tokens = Tokens(self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto)
         self.stream = Stream(self)                              # init the streaming object

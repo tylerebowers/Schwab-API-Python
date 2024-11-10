@@ -7,8 +7,9 @@ Github: https://github.com/tylerebowers/Schwab-API-Python
 import json
 import atexit
 import asyncio
-import datetime
 import logging
+import datetime
+import zoneinfo
 import threading
 import websockets
 from time import sleep
@@ -71,15 +72,16 @@ class Stream:
                     receiver_func(await self._websocket.recv(), **kwargs)
                     self.active = True
 
-                    # send subscriptions
+                    # send subscriptions (that are queued or previously sent)
                     for service, subs in self.subscriptions.items():
-                        reqs = []
+                        grouped = {} # group subscriptions by fields for more efficient requests
                         for key, fields in subs.items():
-                            reqs.append(self.basic_request(service=service,
-                                                           command="ADD",
-                                                           parameters={"keys": key,
-                                                                       "fields": Stream._list_to_string(fields)}))
+                            grouped.setdefault(self._list_to_string(fields), []).append(key)
+                        reqs = [] # list of requests to send for this service
+                        for fields, keys in grouped.items():
+                            reqs.append(self.basic_request(service=service, command="ADD", parameters={"keys": self._list_to_string(keys), "fields": fields}))
                         if reqs:
+                            self._logger.debug(f"Sending subscriptions: {reqs}")
                             await self._websocket.send(json.dumps({"requests": reqs}))
                             receiver_func(await self._websocket.recv(), **kwargs)
 
@@ -132,32 +134,29 @@ class Stream:
         else:
             self._logger.warning("Stream already active.")
 
-    def start_auto(self, receiver=print, start_time: datetime.datetime.time = datetime.time(13, 29, 0, tzinfo=datetime.timezone.utc),
-                   stop_time: datetime.datetime.time = datetime.time(20, 0, 0, tzinfo=datetime.timezone.utc), on_days: list[int] = (0,1,2,3,4), daemon: bool = True, **kwargs):
+    def start_auto(self, receiver=print, start_time: datetime.time = datetime.time(9, 29, 0),
+                   stop_time: datetime.time = datetime.time(16, 0, 0), on_days: list[int] = (0,1,2,3,4),
+                   now_timezone: zoneinfo.ZoneInfo = zoneinfo.ZoneInfo("America/New_York"), daemon: bool = True, **kwargs):
         """
         Start the stream automatically at market open and close, will NOT erase subscriptions
         :param receiver: function to call when data is received
         :type receiver: function
-        :param start_time: time to start the stream in UTC, must be later than datetime.time.min
-        :type start_time: bool
-        :param stop_time: time to stop the stream in UTC, must be earlier than datetime.time.max
-        :type stop_time: bool
+        :param start_time: time to start the stream, must be later than datetime.time.min, default 9:30 (for EST)
+        :type start_time: datetime.time
+        :param stop_time: time to stop the stream, must be earlier than datetime.time.max, default 4:00 (for EST)
+        :type stop_time: datetime.time
         :param on_days: day(s) to start the stream default: (0,1,2,3,4) = Mon-Fri, (0 = Monday, ..., 6 = Sunday)
-        :type on_days: list(int) | set(int)
+        :type on_days: list[int] | set(int)
+        :param now_timezone: timezone to use for now, default: ZoneInfo("America/New_York")
+        :type now_timezone: zoneinfo.ZoneInfo
         :param daemon: whether to run the thread as a daemon
         :type daemon: bool
         """
-        #start_time = datetime.time(13, 29, 0, tzinfo=datetime.timezone.utc)  # market opens at 9:30 ET
-        #stop_time = datetime.time(20, 0, 0, tzinfo=datetime.timezone.utc)  # market closes at 4:00 ET
-        #pre_hours: start_time = datetime.time(10, 59, 0, tzinfo=datetime.timezone.utc)
-        #after_hours: stop_time = datetime.time.max.replace(tzinfo=datetime.timezone.utc) # 23:59:59:999999
-        start_time = start_time.replace(tzinfo=datetime.timezone.utc)
-        stop_time = stop_time.replace(tzinfo=datetime.timezone.utc)
         def checker():
 
             while True:
-                now = datetime.datetime.now(datetime.timezone.utc)
-                in_hours = (start_time <= now.time().replace(tzinfo=datetime.timezone.utc) <= stop_time) and (now.weekday() in on_days)
+                now = datetime.datetime.now(now_timezone)
+                in_hours = (start_time <= now.time() <= stop_time) and (now.weekday() in on_days)
                 if in_hours and not self.active:
                     if len(self.subscriptions) == 0:
                         self._logger.warning("No subscriptions, starting stream anyways.")
@@ -169,7 +168,7 @@ class Stream:
 
         threading.Thread(target=checker, daemon=daemon).start()
 
-        if not start_time <= datetime.datetime.now(datetime.timezone.utc).time().replace(tzinfo=datetime.timezone.utc) <= stop_time:
+        if not start_time <= datetime.datetime.now(now_timezone).time() <= stop_time:
             self._logger.info("Stream was started outside of active hours and will launch when in hours.")
 
     def _record_request(self, request: dict):
@@ -184,7 +183,7 @@ class Stream:
         service = request.get("service", None)
         command = request.get("command", None)
         parameters = request.get("parameters", None)
-        if parameters is not None:
+        if parameters is not None and service is not None:
             keys = str_to_list(parameters.get("keys", []))
             fields = str_to_list(parameters.get("fields", []))
             # add service to subscriptions if not already there
