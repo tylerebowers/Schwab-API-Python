@@ -12,6 +12,42 @@ You can also reference the [schwab documentation](https://developer.schwab.com/p
 
 ## API Calls
 
+
+- [Accounts and Trading - Accounts](#accounts-and-trading---accounts)
+    - [Get account number and hashes for linked accounts](#get-account-number-and-hashes-for-linked-accounts)
+    - [Get details for all linked accounts](#get-details-for-all-linked-accounts)
+    - [Get specific account positions](#get-specific-account-positions)
+- [Accounts and Trading - Orders](#accounts-and-trading---orders)
+    - [Get orders for a linked account](#get-orders-for-a-linked-account)
+    - [Place an order](#place-an-order)
+    - [Get specific order details](#get-specific-order-details)
+    - [Cancel a specific order](#cancel-a-specific-order)
+    - [Replace a specific order](#replace-a-specific-order)
+    - [Get account orders for all linked accounts](#get-account-orders-for-all-linked-accounts)
+    - [Preview order (not implemented by Schwab yet)](#preview-order-not-implemented-by-schwab-yet)
+- [Accounts and Trading - Transactions](#accounts-and-trading---transactions)
+    - [Get all transactions for an account](#get-all-transactions-for-an-account)
+    - [Get details for a specific transaction](#get-details-for-a-specific-transaction)
+- [Accounts and Trading - UserPreference](#accounts-and-trading---userpreference)
+    - [Get user preferences for accounts, includes streaming information](#get-user-preferences-for-accounts-includes-streaming-information)
+- [Market Data - Quotes](#market-data---quotes)
+    - [Get a list of quotes](#get-a-list-of-quotes)
+    - [Get a single quote](#get-a-single-quote)
+- [Market Data - Options Chains](#market-data---options-chains)
+    - [Get an option chain](#get-an-option-chain)
+- [Market Data - Options Expiration Chain](#market-data---options-expiration-chain)
+    - [Get an option expiration chain](#get-an-option-expiration-chain)
+- [Market Data - PriceHistory](#market-data---pricehistory)
+    - [Get price history for a symbol](#get-price-history-for-a-symbol)
+- [Market Data - Movers](#market-data---movers)
+    - [Get movers for an index](#get-movers-for-an-index)
+- [Market Data - MarketHours](#market-data---markethours)
+    - [Get market hours for a symbol](#get-market-hours-for-a-symbol)
+    - [Get market hours for a market](#get-market-hours-for-a-market)
+- [Market Data - Instruments](#market-data---instruments)
+    - [Get instruments for a symbol](#get-instruments-for-a-symbol)
+    - [Get instruments for a cusip](#get-instruments-for-a-cusip)
+    
 <!---## Accounts and Trading - Accounts -->
 
 ### Get account number and hashes for linked accounts
