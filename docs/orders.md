@@ -3,6 +3,26 @@
 After making a client object i.e. `client = schwabdev.Client(...)` we can place orders using the `client.order_place(...)` method.
 ### Notes:
 * Orders are currently only supported for equities and options.
+
+## Table of Contents
+- [Order Methods](#order-methods)
+    - [Place an order](#place-an-order)
+    - [Get specific order details](#get-specific-order-details)
+    - [Cancel a specific order](#cancel-a-specific-order)
+    - [Replace a specific order](#replace-a-specific-order)
+- [Order Examples](#order-examples)
+    - [Buy 10 shares of AMD at Market price](#buy-10-shares-of-amd-at-market-price)
+    - [Buy 4 shares of INTC at limit price $10.00](#buy-4-shares-of-intc-at-limit-price-1000)
+    - [Sell 3 options example](#sell-3-options-example)
+    - [Buy 3 options example](#buy-3-options-example)
+    - [Buy Limited Vertical Call Spread](#buy-limited-vertical-call-spread)
+    - [Conditional Order: If 10 shares XYZ filled then sell 10 shares ABC](#conditional-order-if-10-shares-xyz-filled-then-sell-10-shares-abc)
+    - [Conditional Order: If 2 shares XYZ filled then cancel sell 2 shares ABC](#conditional-order-if-2-shares-xyz-filled-then-cancel-sell-2-shares-abc)
+    - [Conditional Order: If 5 shares XYZ filled then sell 5 shares ABC and 5 shares IJK](#conditional-order-if-5-shares-xyz-filled-then-sell-5-shares-abc-and-5-shares-ijk)
+    - [Sell Trailing Stop: 10 shares XYZ with a trailing stop price of 10 (offset)](#sell-trailing-stop-10-shares-xyz-with-a-trailing-stop-price-of-10-offset)
+    - [Iron Condor](#iron-condor)
+
+## Order  Methods
 ### Place an order 
 > Syntax: `client.order_place(account_hash, order)`  
 > * Param account_hash(str): account hash to get place order on.  
