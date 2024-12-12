@@ -18,11 +18,11 @@ After making a client object i.e. `client = schwabdev.Client(...)` we can place 
     - [Buy Limited Vertical Call Spread](#buy-limited-vertical-call-spread)
     - [Conditional Order: If 10 shares XYZ filled then sell 10 shares ABC](#conditional-order-if-10-shares-xyz-filled-then-sell-10-shares-abc)
     - [Conditional Order: If 2 shares XYZ filled then cancel sell 2 shares ABC](#conditional-order-if-2-shares-xyz-filled-then-cancel-sell-2-shares-abc)
-    - [Conditional Order: If 5 shares XYZ filled then sell 5 shares ABC and 5 shares IJK](#conditional-order-if-5-shares-xyz-filled-then-sell-5-shares-abc-and-5-shares-ijk)
+    - [Conditional Order: If 5 shares XYZ filled then OCO sell 5 shares ABC or 5 shares IJK](#conditional-order-if-5-shares-xyz-filled-then-oco-sell-5-shares-abc-or-5-shares-ijk).
     - [Sell Trailing Stop: 10 shares XYZ with a trailing stop price of 10 (offset)](#sell-trailing-stop-10-shares-xyz-with-a-trailing-stop-price-of-10-offset)
     - [Iron Condor](#iron-condor)
 
-## Order  Methods
+## Order Methods
 ### Place an order 
 > Syntax: `client.order_place(account_hash, order)`  
 > * Param account_hash(str): account hash to get place order on.  
@@ -250,7 +250,8 @@ order = {"orderStrategyType": "OCO",
          }
 ```
 
-### Conditional Order: If 5 shares XYZ filled then sell 5 shares ABC and 5 shares IJK.
+### Conditional Order: If 5 shares XYZ filled then OCO sell 5 shares ABC or 5 shares IJK.
+Buy 5 shares of XYZ at a Limit price of $14.97 good for the Day. Once filled, 2 sell orders are immediately sent: Sell 5 shares of XYZ at a Limit price of $15.27 and Sell 5 shares of IJK with a Stop order where the stop price is $11.27. If one of the sell orders fill, the other order is immediately cancelled. Both Sell orders are Good till Cancel. Also known as a 1st Trigger OCO order.
 ```py
 order = {"orderStrategyType": "TRIGGER",
          "session": "NORMAL",
