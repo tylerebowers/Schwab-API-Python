@@ -17,16 +17,13 @@ import webbrowser
 
 import requests
 
-from .client import Client
-
-
 class Tokens:
     _ACCESS_TOKEN_TIMEOUT = 1800  # in seconds (from schwab)
     _REFRESH_TOKEN_TIMEOUT = 7 * 24 * 60 * 60  # in seconds (from schwab)
 
     def __init__(
         self,
-        client: Client,
+        client: object,
         app_key: str,
         app_secret: str,
         callback_url: str,
