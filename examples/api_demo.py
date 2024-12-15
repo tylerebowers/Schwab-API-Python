@@ -2,12 +2,14 @@
 This file contains examples for every api call.
 """
 
-from dotenv import load_dotenv
-from time import sleep
-import schwabdev
 import datetime
 import logging
 import os
+from time import sleep
+
+from dotenv import load_dotenv
+
+import schwabdev
 
 
 def main():
@@ -18,25 +20,33 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     # create client
-    client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url'))
+    client = schwabdev.Client(
+        os.getenv('app_key'), os.getenv('app_secret'), os.getenv('callback_url')
+    )
 
-    print("\nGet account number and hashes for linked accounts")
+    print('\nGet account number and hashes for linked accounts')
     linked_accounts = client.account_linked().json()
     print(linked_accounts)
-    account_hash = linked_accounts[0].get('hashValue') # this will get the first linked account
+    account_hash = linked_accounts[0].get('hashValue')  # this will get the first linked account
     sleep(3)
 
-    print("\nGet details for all linked accounts")
+    print('\nGet details for all linked accounts')
     print(client.account_details_all().json())
     sleep(3)
 
-    print("\nGet specific account positions (uses default account, can be changed)")
-    print(client.account_details(account_hash, fields="positions").json())
+    print('\nGet specific account positions (uses default account, can be changed)')
+    print(client.account_details(account_hash, fields='positions').json())
     sleep(3)
 
     # get orders for a linked account
-    print("\nGet orders for a linked account")
-    print(client.account_orders(account_hash, datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30), datetime.datetime.now(datetime.timezone.utc)).json())
+    print('\nGet orders for a linked account')
+    print(
+        client.account_orders(
+            account_hash,
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
+            datetime.datetime.now(datetime.timezone.utc),
+        ).json()
+    )
     sleep(3)
 
     # place an order, get the details, then cancel it (uncomment to test)
@@ -76,79 +86,92 @@ def main():
     # client.order_replace(account_hash, order_id, order)
     """
 
-    print("\nGet up to 3000 orders for all accounts for the past 30 days")
-    print(client.account_orders_all(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
-                                    datetime.datetime.now(datetime.timezone.utc)).json())
+    print('\nGet up to 3000 orders for all accounts for the past 30 days')
+    print(
+        client.account_orders_all(
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
+            datetime.datetime.now(datetime.timezone.utc),
+        ).json()
+    )
     sleep(3)
 
     # preview order (not implemented by Schwab yet)
     # print("\nclient.order_preview(account_hash, orderObject)")
     # client.order_preview(account_hash, orderObject)
 
-
-    print("\nGet all transactions for an account")
-    print(client.transactions(account_hash, datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
-                              datetime.datetime.now(datetime.timezone.utc), "TRADE").json())
+    print('\nGet all transactions for an account')
+    print(
+        client.transactions(
+            account_hash,
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30),
+            datetime.datetime.now(datetime.timezone.utc),
+            'TRADE',
+        ).json()
+    )
     sleep(3)
 
     # get details for a specific transaction (no demo implemented)
     # print("\nclient.transaction_details(account_hash, transactionId).json()")
     # print(client.transaction_details(account_hash, transactionId).json())
 
-
-    print("\nGet user preferences for an account")
+    print('\nGet user preferences for an account')
     print(client.preferences().json())
     sleep(3)
 
-
-    print("\nGet a list of quotes")
-    print(client.quotes(["AAPL", "AMD"]).json())
+    print('\nGet a list of quotes')
+    print(client.quotes(['AAPL', 'AMD']).json())
     sleep(3)
 
-    print("\nGet a single quote")
-    print(client.quote("INTC").json())
+    print('\nGet a single quote')
+    print(client.quote('INTC').json())
     sleep(3)
 
-    print("\nGet an option chain")
-    print("There is a lot to print so this is not shown, the demo code is commented out")
+    print('\nGet an option chain')
+    print('There is a lot to print so this is not shown, the demo code is commented out')
     # print(client.option_chains("AAPL").json())
-    # Here is another example for SPX, note that if you call with just $SPX then you will exceed the buffer on Schwab's end hence the additional parameters to limit the size of return.
+    # Here is another example for SPX, note that if you call with just $SPX
+    # you will exceed the buffer on Schwab's end
+    # hence, the additional parameters to limit the size of return.
     # print(client.option_chains("$SPX", contractType="CALL", range="ITM").json())
     sleep(3)
 
-    print("\nGet an option expiration chain")
-    print(client.option_expiration_chain("AAPL").json())
+    print('\nGet an option expiration chain')
+    print(client.option_expiration_chain('AAPL').json())
     sleep(3)
 
-    print("\nGet price history for a symbol")
-    print(client.price_history("AAPL", "year").json())
+    print('\nGet price history for a symbol')
+    print(client.price_history('AAPL', 'year').json())
     sleep(3)
 
-    print("\nGet movers for an index")
-    print(client.movers("$DJI").json())
+    print('\nGet movers for an index')
+    print(client.movers('$DJI').json())
     sleep(3)
 
-    print("\nGet marketHours for a symbol")
-    print(client.market_hours(["equity", "option"]).json())
+    print('\nGet marketHours for a symbol')
+    print(client.market_hours(['equity', 'option']).json())
     # print(client.market_hours("equity,option").json()) # also works
     sleep(3)
 
-    print("\nGet marketHours for a market")
-    print(client.market_hour("equity").json())
+    print('\nGet marketHours for a market')
+    print(client.market_hour('equity').json())
     sleep(3)
 
-    print("\nGet instruments for a symbol")
-    print(client.instruments("AAPL", "fundamental").json())
+    print('\nGet instruments for a symbol')
+    print(client.instruments('AAPL', 'fundamental').json())
     sleep(3)
 
-    print("\nGet instruments for a cusip")
-    print(client.instrument_cusip("037833100").json())  # 037833100 = AAPL
+    print('\nGet instruments for a cusip')
+    print(client.instrument_cusip('037833100').json())  # 037833100 = AAPL
     sleep(3)
 
 
 if __name__ == '__main__':
-    print("Welcome to The Unofficial Schwab Python Wrapper!")
-    print("Github: https://github.com/tylerebowers/Schwab-API-Python")
-    print("API documentation: https://github.com/tylerebowers/Schwab-API-Python/blob/master/docs/api.md")
-    print("Client documentation: https://github.com/tylerebowers/Schwab-API-Python/blob/master/docs/client.md")
+    print('Welcome to The Unofficial Schwab Python Wrapper!')
+    print('Github: https://github.com/tylerebowers/Schwab-API-Python')
+    print(
+        'API documentation: https://github.com/tylerebowers/Schwab-API-Python/blob/master/docs/api.md'
+    )
+    print(
+        'Client documentation: https://github.com/tylerebowers/Schwab-API-Python/blob/master/docs/client.md'
+    )
     main()  # call the user code above

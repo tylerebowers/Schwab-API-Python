@@ -1,3 +1,47 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+exclude = [
+    ".git",
+    "*.env",
+    "*venv*",
+    "__pycache__",
+    "build",
+]
+lint.ignore = [
+    "E402", # Module level import not at top of file
+    "Q003", # avoidable-escaped-quote
+]
+fix = true
+lint.unfixable = [
+    "F401", # unused imports
+    "F841", # unused variables
+]
+line-length = 100
+lint.select = [
+    "C9", # mccabe complexity
+    "E", # pycodestyle error
+    "F", # pyflakes
+    "N", # pep8-naming
+    "Q", # flake8-quotes
+    "W", # pycodestyle warnings
+    "I", # isort
+    "INP",  # flake8-no-pep420
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["INP"]
+
+
+[tool.ruff.lint.flake8-quotes]
+multiline-quotes = "double"
+avoid-escape = false
+inline-quotes = "single"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.format]
+quote-style="single"

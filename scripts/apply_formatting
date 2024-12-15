@@ -1,0 +1,11 @@
+#!/bin/bash
+
+export DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+export CWD="$PWD"
+export PROJDIR=$(realpath "${DIR}/..")
+
+# # Run formatting on python files
+ruff . --fix --select F841 --fixable F841 # Remove unused variables
+ruff . --fix --select F401 --fixable F401 # deal with unused imports
+ruff .
+ruff format .

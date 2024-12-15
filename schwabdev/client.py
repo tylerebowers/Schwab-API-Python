@@ -4,96 +4,111 @@ Coded by Tyler Bowers
 Github: https://github.com/tylerebowers/Schwab-API-Python
 """
 
-import logging
 import datetime
-import requests
+import logging
 import urllib.parse
+
+import requests
+
 from .stream import Stream
 from .tokens import Tokens
 
 
 class Client:
+    def __init__(
+        self,
+        app_key: str,
+        app_secret: str,
+        callback_url: str = 'https://127.0.0.1',
+        tokens_file: str = 'tokens.json',
+        timeout: int = 5,
+        update_tokens_auto: bool = True,
+    ):
+        """Initialize a client to access the Schwab API.
 
-    def __init__(self, app_key, app_secret, callback_url="https://127.0.0.1", tokens_file="tokens.json", timeout=5, update_tokens_auto=True):
-        """
-        Initialize a client to access the Schwab API.
-        :param app_key: app key credentials
-        :type app_key: str
-        :param app_secret: app secret credentials
-        :type app_secret: str
-        :param callback_url: url for callback
-        :type callback_url: str
-        :param tokens_file: path to tokens file
-        :type tokens_file: str
-        :param timeout: request timeout
-        :type timeout: int
-        :param update_tokens_auto: update tokens automatically
-        :type update_tokens_auto: bool
+        Args:
+            app_key (str): App key credentials.
+            app_secret (str): App secret credentials.
+            callback_url (str): URL for callback.
+            tokens_file (str): Path to tokens file.
+            timeout (int): Request timeout.
+            update_tokens_auto (bool): Update tokens automatically.
         """
 
         if timeout <= 0:
-            raise Exception("Timeout must be greater than 0 and is recommended to be 5 seconds or more.")
+            raise Exception(
+                'Timeout must be greater than 0 and is recommended to be 5 seconds or more.'
+            )
 
-        self.version = "Schwabdev 2.4.4"                        # version of the client
-        self.timeout = timeout                                  # timeout to use in requests
-        self.tokens = Tokens(self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto)
-        self.stream = Stream(self)                              # init the streaming object
-        self._logger = logging.getLogger("Schwabdev.Client")    # init the logger
+        self.version = 'Schwabdev 2.4.4'  # version of the client
+        self.timeout = timeout  # timeout to use in requests
+        self.tokens = Tokens(
+            self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto
+        )
+        self.stream = Stream(self)  # init the streaming object
+        self._logger = logging.getLogger('Schwabdev.Client')  # init the logger
 
-        self._logger.info("Client Initialization Complete")
+        self._logger.info('Client Initialization Complete')
 
+    def _params_parser(self, params: dict) -> dict:
+        """Removes None (null) values from the given dictionary.
 
-    def _params_parser(self, params: dict):
-        """
-        Removes None (null) values
-        :param params: params to remove None values from
-        :type params: dict
-        :return: params without None values
-        :rtype: dict
+        Args:
+            params (dict): The dictionary from which to remove None values.
+
+        Returns:
+            dict: The dictionary without None values.
+
         """
         for key in list(params.keys()):
-            if params[key] is None: del params[key]
+            if params[key] is None:
+                del params[key]
         return params
 
-    def _time_convert(self, dt = None, form="8601"):
-        """
-        Convert time to the correct format, passthrough if a string, preserve None if None for params parser
-        :param dt: datetime.pyi object to convert
-        :type dt: datetime.pyi | str | None
-        :param form: what to convert input to
-        :type form: str
-        :return: converted time or passthrough
-        :rtype: str | None
+    def _time_convert(self, dt=None, form='8601') -> str | None:
+        """Convert time to correct format, passthrough if a string, preserve None if None for params parser.
+
+        Args:
+            dt (datetime.datetime | str | None): Datetime object to convert.
+            form (str): Format to convert input to. Options are "8601", "epoch", "epoch_ms", "YYYY-MM-DD".
+
+        Returns:
+            str | None: Converted time or passthrough.
         """
         if dt is None or not isinstance(dt, datetime.datetime):
             return dt
-        elif form == "8601":  # assume datetime object from here on
+        elif form == '8601':  # assume datetime object from here on
             return f"{dt.isoformat().split('+')[0][:-3]}Z"
-        elif form == "epoch":
+        elif form == 'epoch':
             return int(dt.timestamp())
-        elif form == "epoch_ms":
+        elif form == 'epoch_ms':
             return int(dt.timestamp() * 1000)
-        elif form == "YYYY-MM-DD":
-            return dt.strftime("%Y-%m-%d")
+        elif form == 'YYYY-MM-DD':
+            return dt.strftime('%Y-%m-%d')
         else:
             return dt
 
-    def _format_list(self, l: list | str | None):
-        """
-        Convert python list to string or passthough if already a string i.e ["a", "b"] -> "a,b"
-        :param l: list to convert
-        :type l: list | str | None
-        :return: converted string or passthrough
-        :rtype: str | None
+    def _format_list(self, l: list | str | None) -> str | None:
+        """ Convert a Python list to a string or passthrough if already a string.
+
+        This method takes a list and converts it to a comma-separated string.
+        If the input is already a string, it returns the input unchanged.
+        If the input is None, it returns None.
+
+        Args:
+            l (list | str | None): The list to convert.
+
+        Returns:
+            str | None: The converted string or passthrough.
         """
         if l is None:
             return None
         elif isinstance(l, list):
-            return ",".join(l)
+            return ','.join(l)
         else:
             return l
-        
-    _base_api_url = "https://api.schwabapi.com"
+
+    _base_api_url = 'https://api.schwabapi.com'
 
     """
     Accounts and Trading Production
@@ -101,147 +116,222 @@ class Client:
 
     def account_linked(self) -> requests.Response:
         """
-        Account numbers in plain text cannot be used outside of headers or request/response bodies. As the first step consumers must invoke this service to retrieve the list of plain text/encrypted value pairs, and use encrypted account values for all subsequent calls for any accountNumber request.
-        :return: All linked account numbers and hashes
-        :rtype: request.Response
+        Retrieve the list of plain text/encrypted value pairs for account numbers.
+
+        Account numbers in plain text cannot be used outside of headers or request/response bodies.
+        As the first step, consumers must invoke this service to retrieve the list of plain text/encrypted
+        value pairs and use encrypted account values for all subsequent calls for any accountNumber request.
+
+        Returns:
+            requests.Response: All linked account numbers and hashes.
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/accounts/accountNumbers',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/accounts/accountNumbers',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            timeout=self.timeout,
+        )
 
     def account_details_all(self, fields: str = None) -> requests.Response:
         """
-        All the linked account information for the user logged in. The balances on these accounts are displayed by default however the positions on these accounts will be displayed based on the "positions" flag.
-        :param fields: fields to return (options: "positions")
-        :type fields: str | None
-        :return: details for all linked accounts
-        :rtype: request.Response
+        Retrieve all linked account information for the logged-in user.
+
+        The balances on these accounts are displayed by default. The positions on these accounts will be displayed based on the "positions" flag.
+
+        Args:
+            fields (str, optional): Fields to return (options: "positions").
+
+        Returns:
+            requests.Response: Details for all linked accounts.
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/accounts/',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser({'fields': fields}),
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/accounts/',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser({'fields': fields}),
+            timeout=self.timeout,
+        )
 
     def account_details(self, accountHash: str, fields: str = None) -> requests.Response:
         """
-        Specific account information with balances and positions. The balance information on these accounts is displayed by default but Positions will be returned based on the "positions" flag.
-        :param accountHash: account hash from account_linked()
-        :type accountHash: str
-        :param fields: fields to return
-        :type fields: str | None
-        :return: details for one linked account
-        :rtype: request.Response
-        """
-        return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser({'fields': fields}),
-                            timeout=self.timeout)
+        Specific account information with balances and positions.
 
-    def account_orders(self, accountHash: str, fromEnteredTime: datetime.datetime | str, toEnteredTime: datetime.datetime | str, maxResults: int = None, status: str = None) -> requests.Response:
+        The balance information on these accounts is displayed by default but Positions will be returned based on the "positions" flag.
+
+        Args:
+            accountHash (str): Account hash from account_linked().
+            fields (str, optional): Fields to return.
+
+        Returns:
+            requests.Response: Details for one linked account.
         """
-        All orders for a specific account. Orders retrieved can be filtered based on input parameters below. Maximum date range is 1 year.
-        :param accountHash: account hash from account_linked()
-        :type accountHash: str
-        :param fromEnteredTime: from entered time
-        :type fromEnteredTime: datetime.pyi | str
-        :param toEnteredTime: to entered time
-        :type toEnteredTime: datetime.pyi | str
-        :param maxResults: maximum number of results
-        :type maxResults: int| None
-        :param status: status ("AWAITING_PARENT_ORDER"|"AWAITING_CONDITION"|"AWAITING_STOP_CONDITION"|"AWAITING_MANUAL_REVIEW"|"ACCEPTED"|"AWAITING_UR_OUT"|"PENDING_ACTIVATION"|"QUEUED"|"WORKING"|"REJECTED"|"PENDING_CANCEL"|"CANCELED"|"PENDING_REPLACE"|"REPLACED"|"FILLED"|"EXPIRED"|"NEW"|"AWAITING_RELEASE_TIME"|"PENDING_ACKNOWLEDGEMENT"|"PENDING_RECALL"|"UNKNOWN")
-        :type status: str| None
-        :return: orders for one linked account hash
-        :rtype: request.Response
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser({'fields': fields}),
+            timeout=self.timeout,
+        )
+
+    def account_orders(
+        self,
+        accountHash: str,
+        fromEnteredTime: datetime.datetime | str,
+        toEnteredTime: datetime.datetime | str,
+        maxResults: int = None,
+        status: str = None,
+    ) -> requests.Response:
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders',
-                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser(
-                                {'maxResults': maxResults, 'fromEnteredTime': self._time_convert(fromEnteredTime, "8601"),
-                                 'toEnteredTime': self._time_convert(toEnteredTime, "8601"), 'status': status}),
-                            timeout=self.timeout)
+        Retrieve all orders for a specific account.
+
+        Orders retrieved can be filtered based on input parameters below. Maximum date range is 1 year.
+
+        Args:
+            accountHash (str): Account hash from account_linked().
+            fromEnteredTime (datetime.datetime | str): From entered time.
+            toEnteredTime (datetime.datetime | str): To entered time.
+            maxResults (int, optional): Maximum number of results.
+            status (str, optional): Status ("AWAITING_PARENT_ORDER", "AWAITING_CONDITION", "AWAITING_STOP_CONDITION",
+                "AWAITING_MANUAL_REVIEW", "ACCEPTED", "AWAITING_UR_OUT", "PENDING_ACTIVATION", "QUEUED", "WORKING",
+                "REJECTED", "PENDING_CANCEL", "CANCELED", "PENDING_REPLACE", "REPLACED", "FILLED", "EXPIRED", "NEW",
+                "AWAITING_RELEASE_TIME", "PENDING_ACKNOWLEDGEMENT", "PENDING_RECALL", "UNKNOWN").
+
+        Returns:
+            requests.Response: Orders for one linked account hash.
+        """
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders',
+            headers={
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {self.tokens.access_token}',
+            },
+            params=self._params_parser(
+                {
+                    'maxResults': maxResults,
+                    'fromEnteredTime': self._time_convert(fromEnteredTime, '8601'),
+                    'toEnteredTime': self._time_convert(toEnteredTime, '8601'),
+                    'status': status,
+                }
+            ),
+            timeout=self.timeout,
+        )
 
     def order_place(self, accountHash: str, order: dict) -> requests.Response:
         """
         Place an order for a specific account.
-        :param accountHash: account hash from account_linked()
-        :type accountHash: str
-        :param order: order dictionary, examples in Schwab docs
-        :type order: dict
-        :return: order number in response header (if immediately filled then order number not returned)
-        :rtype: request.Response
+
+        Args:
+            accountHash (str): Account hash from account_linked().
+            order (dict): Order dictionary, examples in Schwab docs.
+
+        Returns:
+            requests.Response: Order number in response header (if immediately filled then order number not returned).
         """
-        return requests.post(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders',
-                             headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}',
-                                      "Content-Type": "application/json"},
-                             json=order,
-                             timeout=self.timeout)
+        return requests.post(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders',
+            headers={
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {self.tokens.access_token}',
+                'Content-Type': 'application/json',
+            },
+            json=order,
+            timeout=self.timeout,
+        )
 
     def order_details(self, accountHash: str, orderId: int | str) -> requests.Response:
         """
-        Get a specific order by its ID, for a specific account
-        :param accountHash: account hash from account_linked()
-        :type accountHash: str
-        :param orderId: order id
-        :type orderId: int | str
-        :return: order details
-        :rtype: request.Response
+        Get a specific order by its ID, for a specific account.
+
+        Args:
+            accountHash (str): Account hash from account_linked().
+            orderId (int | str): Order ID.
+
+        Returns:
+            requests.Response: Order details.
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            timeout=self.timeout,
+        )
 
     def order_cancel(self, accountHash: str, orderId: int | str) -> requests.Response:
         """
-        Cancel a specific order by its ID, for a specific account
-        :param accountHash: account hash from account_linked()
-        :type accountHash: str
-        :param orderId: order id
-        :type orderId: str|int
-        :return: response code
-        :rtype: request.Response
+        Cancel a specific order by its ID, for a specific account.
+
+        Args:
+            accountHash (str): Account hash from account_linked().
+            orderId (int | str): Order ID.
+
+        Returns:
+            requests.Response: Response code.
         """
-        return requests.delete(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
-                               headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                               timeout=self.timeout)
+        return requests.delete(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            timeout=self.timeout,
+        )
 
     def order_replace(self, accountHash: str, orderId: int | str, order: dict) -> requests.Response:
         """
-        Replace an existing order for an account. The existing order will be replaced by the new order. Once replaced, the old order will be canceled and a new order will be created.
-        :param accountHash: account hash from account_linked()
-        :type accountHash: str
-        :param orderId: order id
-        :type orderId: str|int
-        :param order: order dictionary, examples in Schwab docs
-        :type order: dict
-        :return: response code
-        :rtype: request.Response
-        """
-        return requests.put(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
-                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}',
-                                     "Content-Type": "application/json"},
-                            json=order,
-                            timeout=self.timeout)
+        Replace an existing order for an account.
 
-    def account_orders_all(self, fromEnteredTime: datetime.datetime | str, toEnteredTime: datetime.datetime | str, maxResults: int = None, status: str = None) -> requests.Response:
+        The existing order will be replaced by the new order. Once replaced, the old order will be canceled and a new order will be created.
+
+        Args:
+            accountHash (str): Account hash from account_linked().
+            orderId (int | str): Order ID.
+            order (dict): Order dictionary, examples in Schwab docs.
+
+        Returns:
+            requests.Response: Response code.
         """
-        Get all orders for all accounts
-        :param fromEnteredTime: start date
-        :type fromEnteredTime: datetime.pyi | str
-        :param toEnteredTime: end date
-        :type toEnteredTime: datetime.pyi | str
-        :param maxResults: maximum number of results (set to None for default 3000)
-        :type maxResults: int | None
-        :param status: status ("AWAITING_PARENT_ORDER"|"AWAITING_CONDITION"|"AWAITING_STOP_CONDITION"|"AWAITING_MANUAL_REVIEW"|"ACCEPTED"|"AWAITING_UR_OUT"|"PENDING_ACTIVATION"|"QUEUED"|"WORKING"|"REJECTED"|"PENDING_CANCEL"|"CANCELED"|"PENDING_REPLACE"|"REPLACED"|"FILLED"|"EXPIRED"|"NEW"|"AWAITING_RELEASE_TIME"|"PENDING_ACKNOWLEDGEMENT"|"PENDING_RECALL"|"UNKNOWN")
-        :type status: str | None
-        :return: all orders
-        :rtype: request.Response
+        return requests.put(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}/orders/{orderId}',
+            headers={
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {self.tokens.access_token}',
+                'Content-Type': 'application/json',
+            },
+            json=order,
+            timeout=self.timeout,
+        )
+
+    def account_orders_all(
+        self,
+        fromEnteredTime: datetime.datetime | str,
+        toEnteredTime: datetime.datetime | str,
+        maxResults: int = None,
+        status: str = None,
+    ) -> requests.Response:
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/orders',
-                            headers={"Accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser(
-                                {'maxResults': maxResults, 'fromEnteredTime': self._time_convert(fromEnteredTime, "8601"),
-                                 'toEnteredTime': self._time_convert(toEnteredTime, "8601"), 'status': status}),
-                            timeout=self.timeout)
+        Get all orders for all accounts.
+
+        Args:
+            fromEnteredTime (datetime.datetime | str): Start date.
+            toEnteredTime (datetime.datetime | str): End date.
+            maxResults (int, optional): Maximum number of results (set to None for default 3000).
+            status (str, optional): Status ("AWAITING_PARENT_ORDER", "AWAITING_CONDITION", "AWAITING_STOP_CONDITION",
+                "AWAITING_MANUAL_REVIEW", "ACCEPTED", "AWAITING_UR_OUT", "PENDING_ACTIVATION", "QUEUED", "WORKING",
+                "REJECTED", "PENDING_CANCEL", "CANCELED", "PENDING_REPLACE", "REPLACED", "FILLED", "EXPIRED", "NEW",
+                "AWAITING_RELEASE_TIME", "PENDING_ACKNOWLEDGEMENT", "PENDING_RECALL", "UNKNOWN").
+
+        Returns:
+            requests.Response: All orders.
+        """
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/orders',
+            headers={
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {self.tokens.access_token}',
+            },
+            params=self._params_parser(
+                {
+                    'maxResults': maxResults,
+                    'fromEnteredTime': self._time_convert(fromEnteredTime, '8601'),
+                    'toEnteredTime': self._time_convert(toEnteredTime, '8601'),
+                    'status': status,
+                }
+            ),
+            timeout=self.timeout,
+        )
 
     """
     def order_preview(self, accountHash, orderObject) -> requests.Response:
@@ -251,263 +341,356 @@ class Client:
                                       "Content-Type": "application.json"}, data=orderObject)
     """
 
-    def transactions(self, accountHash: str, startDate: datetime.datetime | str, endDate: datetime.datetime | str, types: str, symbol: str = None) -> requests.Response:
+    def transactions(
+        self,
+        accountHash: str,
+        startDate: datetime.datetime | str,
+        endDate: datetime.datetime | str,
+        types: str,
+        symbol: str = None,
+    ) -> requests.Response:
         """
-        All transactions for a specific account. Maximum number of transactions in response is 3000. Maximum date range is 1 year.
-        :param accountHash: account hash number
-        :type accountHash: str
-        :param startDate: start date
-        :type startDate: datetime.pyi | str
-        :param endDate: end date
-        :type endDate: datetime.pyi | str
-        :param types: transaction type ("TRADE, RECEIVE_AND_DELIVER, DIVIDEND_OR_INTEREST, ACH_RECEIPT, ACH_DISBURSEMENT, CASH_RECEIPT, CASH_DISBURSEMENT, ELECTRONIC_FUND, WIRE_OUT, WIRE_IN, JOURNAL, MEMORANDUM, MARGIN_CALL, MONEY_MARKET, SMA_ADJUSTMENT")
-        :type types: str
-        :param symbol: symbol
-        :return: list of transactions for a specific account
-        :rtype: request.Response
+        Retrieve all transactions for a specific account. Maximum number of transactions in response is 3000. Maximum date range is 1 year.
+
+        Args:
+            accountHash (str): Account hash number.
+            startDate (datetime.datetime | str): Start date.
+            endDate (datetime.datetime | str): End date.
+            types (str): Transaction type ("TRADE, RECEIVE_AND_DELIVER, DIVIDEND_OR_INTEREST, ACH_RECEIPT, ACH_DISBURSEMENT, CASH_RECEIPT, CASH_DISBURSEMENT, ELECTRONIC_FUND, WIRE_OUT, WIRE_IN, JOURNAL, MEMORANDUM, MARGIN_CALL, MONEY_MARKET, SMA_ADJUSTMENT").
+            symbol (str, optional): Symbol.
+
+        Returns:
+            requests.Response: List of transactions for a specific account.
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser(
-                                {'accountNumber': accountHash, 'startDate': self._time_convert(startDate, "8601"),
-                                 'endDate': self._time_convert(endDate, "8601"), 'symbol': symbol, 'types': types}),
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser(
+                {
+                    'accountNumber': accountHash,
+                    'startDate': self._time_convert(startDate, '8601'),
+                    'endDate': self._time_convert(endDate, '8601'),
+                    'symbol': symbol,
+                    'types': types,
+                }
+            ),
+            timeout=self.timeout,
+        )
 
     def transaction_details(self, accountHash: str, transactionId: str | int) -> requests.Response:
         """
-        Get specific transaction information for a specific account
-        :param accountHash: account hash number
-        :type accountHash: str
-        :param transactionId: transaction id
-        :type transactionId: str|int
-        :return: transaction details of transaction id using accountHash
-        :rtype: request.Response
+        Get specific transaction information for a specific account.
+
+        Args:
+            accountHash (str): Account hash number.
+            transactionId (str | int): Transaction ID.
+
+        Returns:
+            requests.Response: Transaction details of the transaction ID using accountHash.
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions/{transactionId}',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params={'accountNumber': accountHash, 'transactionId': transactionId},
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/accounts/{accountHash}/transactions/{transactionId}',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params={'accountNumber': accountHash, 'transactionId': transactionId},
+            timeout=self.timeout,
+        )
 
     def preferences(self) -> requests.Response:
         """
         Get user preference information for the logged in user.
-        :return: User Preferences and Streaming Info
-        :rtype: request.Response
+
+        Returns:
+            requests.Response: User Preferences and Streaming Info.
         """
-        return requests.get(f'{self._base_api_url}/trader/v1/userPreference',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/trader/v1/userPreference',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            timeout=self.timeout,
+        )
 
     """
     Market Data
     """
-    
-    def quotes(self, symbols : list[str] | str, fields: str = None, indicative: bool = False) -> requests.Response:
+
+    def quotes(
+        self, symbols: list[str] | str, fields: str = None, indicative: bool = False
+    ) -> requests.Response:
         """
-        Get quotes for a list of tickers
-        :param symbols: list of symbols strings (e.g. "AMD,INTC" or ["AMD", "INTC"])
-        :type symbols: [str] | str
-        :param fields: string of fields to get ("all", "quote", "fundamental")
-        :type fields: str | None
-        :param indicative: whether to get indicative quotes (True/False)
-        :type indicative: boolean | None
-        :return: list of quotes
-        :rtype: request.Response
+        Get quotes for a list of tickers.
+
+        Args:
+            symbols (list[str] | str): List of symbols strings (e.g. "AMD,INTC" or ["AMD", "INTC"]).
+            fields (str, optional): String of fields to get ("all", "quote", "fundamental").
+            indicative (bool, optional): Whether to get indicative quotes (True/False).
+
+        Returns:
+            requests.Response: List of quotes.
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/quotes',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser(
-                                {'symbols': self._format_list(symbols), 'fields': fields, 'indicative': indicative}),
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/quotes',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser(
+                {
+                    'symbols': self._format_list(symbols),
+                    'fields': fields,
+                    'indicative': indicative,
+                }
+            ),
+            timeout=self.timeout,
+        )
 
     def quote(self, symbol_id: str, fields: str = None) -> requests.Response:
         """
-        Get quote for a single symbol
-        :param symbol_id: ticker symbol
-        :type symbol_id: str (e.g. "AAPL", "/ES", "USD/EUR")
-        :param fields: string of fields to get ("all", "quote", "fundamental")
-        :type fields: str | None
-        :return: quote for a single symbol
-        :rtype: request.Response
-        """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote(symbol_id,safe="")}/quotes',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser({'fields': fields}),
-                            timeout=self.timeout)
+        Get quote for a single symbol.
 
-    def option_chains(self, symbol: str, contractType: str = None, strikeCount: any = None, includeUnderlyingQuote: bool = None, strategy: str = None,
-               interval: any = None, strike: any = None, range: str = None, fromDate: datetime.datetime | str = None, toDate: datetime.datetime | str = None, volatility: any = None, underlyingPrice: any = None,
-               interestRate: any = None, daysToExpiration: any = None, expMonth: str = None, optionType: str = None, entitlement: str = None) -> requests.Response:
+        Args:
+            symbol_id (str): Ticker symbol (e.g. "AAPL", "/ES", "USD/EUR").
+            fields (str, optional): String of fields to get ("all", "quote", "fundamental").
+
+        Returns:
+            requests.Response: Quote for a single symbol.
+        """
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/{urllib.parse.quote(symbol_id,safe="")}/quotes',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser({'fields': fields}),
+            timeout=self.timeout,
+        )
+
+    def option_chains(
+        self,
+        symbol: str,
+        contractType: str = None,
+        strikeCount: any = None,
+        includeUnderlyingQuote: bool = None,
+        strategy: str = None,
+        interval: any = None,
+        strike: any = None,
+        range: str = None,
+        fromDate: datetime.datetime | str = None,
+        toDate: datetime.datetime | str = None,
+        volatility: any = None,
+        underlyingPrice: any = None,
+        interestRate: any = None,
+        daysToExpiration: any = None,
+        expMonth: str = None,
+        optionType: str = None,
+        entitlement: str = None,
+    ) -> requests.Response:
         """
         Get Option Chain including information on options contracts associated with each expiration for a ticker.
-        :param symbol: ticker symbol
-        :type symbol: str
-        :param contractType: contract type ("CALL"|"PUT"|"ALL")
-        :type contractType: str
-        :param strikeCount: strike count
-        :type strikeCount: int
-        :param includeUnderlyingQuote: include underlying quote (True|False)
-        :type includeUnderlyingQuote: boolean
-        :param strategy: strategy ("SINGLE"|"ANALYTICAL"|"COVERED"|"VERTICAL"|"CALENDAR"|"STRANGLE"|"STRADDLE"|"BUTTERFLY"|"CONDOR"|"DIAGONAL"|"COLLAR"|"ROLL)
-        :type strategy: str
-        :param interval: Strike interval
-        :type interval: str
-        :param strike: Strike price
-        :type strike: float
-        :param range: range ("ITM"|"NTM"|"OTM"...)
-        :type range: str
-        :param fromDate: from date
-        :type fromDate: datetime.pyi | str
-        :param toDate: to date
-        :type toDate: datetime.pyi | str
-        :param volatility: volatility
-        :type volatility: float
-        :param underlyingPrice: underlying price
-        :type underlyingPrice: float
-        :param interestRate: interest rate
-        :type interestRate: float
-        :param daysToExpiration: days to expiration
-        :type daysToExpiration: int
-        :param expMonth: expiration month ("JAN"|"FEB"|"MAR"|"APR"|"MAY"|"JUN"|"JUL"|"AUG"|"SEP"|"OCT"|"NOV"|"DEC"|"ALL")
-        :type expMonth: str
-        :param optionType: option type ("CALL"|"PUT")
-        :type optionType: str
-        :param entitlement: entitlement ("PN"|"NP"|"PP")
-        :type entitlement: str
-        :return: list of option chains
-        :rtype: request.Response
+
+        Args:
+            symbol (str): Ticker symbol.
+            contractType (str, optional): Contract type ("CALL"|"PUT"|"ALL").
+            strikeCount (int, optional): Strike count.
+            includeUnderlyingQuote (bool, optional): Include underlying quote (True|False).
+            strategy (str, optional): Strategy ("SINGLE"|"ANALYTICAL"|"COVERED"|"VERTICAL"|"CALENDAR"|"STRANGLE"|"STRADDLE"|"BUTTERFLY"|"CONDOR"|"DIAGONAL"|"COLLAR"|"ROLL).
+            interval (str, optional): Strike interval.
+            strike (float, optional): Strike price.
+            range (str, optional): Range ("ITM"|"NTM"|"OTM"...).
+            fromDate (datetime.datetime | str, optional): From date.
+            toDate (datetime.datetime | str, optional): To date.
+            volatility (float, optional): Volatility.
+            underlyingPrice (float, optional): Underlying price.
+            interestRate (float, optional): Interest rate.
+            daysToExpiration (int, optional): Days to expiration.
+            expMonth (str, optional): Expiration month ("JAN"|"FEB"|"MAR"|"APR"|"MAY"|"JUN"|"JUL"|"AUG"|"SEP"|"OCT"|"NOV"|"DEC"|"ALL").
+            optionType (str, optional): Option type ("CALL"|"PUT").
+            entitlement (str, optional): Entitlement ("PN"|"NP"|"PP").
+
+        Returns:
+            requests.Response: List of option chains.
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/chains',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser(
-                                {'symbol': symbol, 'contractType': contractType, 'strikeCount': strikeCount,
-                                 'includeUnderlyingQuote': includeUnderlyingQuote, 'strategy': strategy,
-                                 'interval': interval, 'strike': strike, 'range': range, 'fromDate': self._time_convert(fromDate, "YYYY-MM-DD"),
-                                 'toDate': self._time_convert(toDate, "YYYY-MM-DD"), 'volatility': volatility, 'underlyingPrice': underlyingPrice,
-                                 'interestRate': interestRate, 'daysToExpiration': daysToExpiration,
-                                 'expMonth': expMonth, 'optionType': optionType, 'entitlement': entitlement}),
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/chains',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser(
+                {
+                    'symbol': symbol,
+                    'contractType': contractType,
+                    'strikeCount': strikeCount,
+                    'includeUnderlyingQuote': includeUnderlyingQuote,
+                    'strategy': strategy,
+                    'interval': interval,
+                    'strike': strike,
+                    'range': range,
+                    'fromDate': self._time_convert(fromDate, 'YYYY-MM-DD'),
+                    'toDate': self._time_convert(toDate, 'YYYY-MM-DD'),
+                    'volatility': volatility,
+                    'underlyingPrice': underlyingPrice,
+                    'interestRate': interestRate,
+                    'daysToExpiration': daysToExpiration,
+                    'expMonth': expMonth,
+                    'optionType': optionType,
+                    'entitlement': entitlement,
+                }
+            ),
+            timeout=self.timeout,
+        )
 
     def option_expiration_chain(self, symbol: str) -> requests.Response:
         """
-        Get an option expiration chain for a ticker
-        :param symbol: ticker symbol
-        :type symbol: str
-        :return: option expiration chain
-        :rtype: request.Response
-        """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/expirationchain',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser({'symbol': symbol}),
-                            timeout=self.timeout)
+        Get an option expiration chain for a ticker.
 
-    def price_history(self, symbol: str, periodType: str = None, period: any = None, frequencyType: str = None, frequency: any = None, startDate: datetime.datetime | str = None,
-                      endDate: any = None, needExtendedHoursData: bool = None, needPreviousClose: bool = None) -> requests.Response:
+        Args:
+            symbol (str): Ticker symbol.
+
+        Returns:
+            requests.Response: Option expiration chain.
         """
-        Get price history for a ticker
-        :param symbol: ticker symbol
-        :type symbol: str
-        :param periodType: period type ("day"|"month"|"year"|"ytd")
-        :type periodType: str
-        :param period: period
-        :type period: int
-        :param frequencyType: frequency type ("minute"|"daily"|"weekly"|"monthly")
-        :type frequencyType: str
-        :param frequency: frequency (frequencyType: options), (minute: 1, 5, 10, 15, 30), (daily: 1), (weekly: 1), (monthly: 1)
-        :type frequency: int
-        :param startDate: start date
-        :type startDate: datetime.pyi | str
-        :param endDate: end date
-        :type endDate: datetime.pyi | str
-        :param needExtendedHoursData: need extended hours data (True|False)
-        :type needExtendedHoursData: boolean
-        :param needPreviousClose: need previous close (True|False)
-        :type needPreviousClose: boolean
-        :return: dictionary of containing candle history
-        :rtype: request.Response
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/expirationchain',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser({'symbol': symbol}),
+            timeout=self.timeout,
+        )
+
+    def price_history(
+        self,
+        symbol: str,
+        periodType: str = None,
+        period: any = None,
+        frequencyType: str = None,
+        frequency: any = None,
+        startDate: datetime.datetime | str = None,
+        endDate: any = None,
+        needExtendedHoursData: bool = None,
+        needPreviousClose: bool = None,
+    ) -> requests.Response:
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/pricehistory',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser({'symbol': symbol, 'periodType': periodType, 'period': period,
-                                                        'frequencyType': frequencyType, 'frequency': frequency,
-                                                        'startDate': self._time_convert(startDate, 'epoch_ms'),
-                                                        'endDate': self._time_convert(endDate, 'epoch_ms'),
-                                                        'needExtendedHoursData': needExtendedHoursData,
-                                                        'needPreviousClose': needPreviousClose}),
-                            timeout=self.timeout)
+        Get price history for a ticker.
+
+        Args:
+            symbol (str): Ticker symbol.
+            periodType (str, optional): Period type ("day"|"month"|"year"|"ytd").
+            period (int, optional): Period.
+            frequencyType (str, optional): Frequency type ("minute"|"daily"|"weekly"|"monthly").
+            frequency (int, optional): Frequency (frequencyType: options), (minute: 1, 5, 10, 15, 30), (daily: 1), (weekly: 1), (monthly: 1).
+            startDate (datetime.datetime | str, optional): Start date.
+            endDate (datetime.datetime | str, optional): End date.
+            needExtendedHoursData (bool, optional): Need extended hours data (True|False).
+            needPreviousClose (bool, optional): Need previous close (True|False).
+
+        Returns:
+            requests.Response: Dictionary containing candle history.
+        """
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/pricehistory',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser(
+                {
+                    'symbol': symbol,
+                    'periodType': periodType,
+                    'period': period,
+                    'frequencyType': frequencyType,
+                    'frequency': frequency,
+                    'startDate': self._time_convert(startDate, 'epoch_ms'),
+                    'endDate': self._time_convert(endDate, 'epoch_ms'),
+                    'needExtendedHoursData': needExtendedHoursData,
+                    'needPreviousClose': needPreviousClose,
+                }
+            ),
+            timeout=self.timeout,
+        )
 
     def movers(self, symbol: str, sort: str = None, frequency: any = None) -> requests.Response:
         """
-        Get movers in a specific index and direction
-        :param symbol: symbol ("$DJI"|"$COMPX"|"$SPX"|"NYSE"|"NASDAQ"|"OTCBB"|"INDEX_ALL"|"EQUITY_ALL"|"OPTION_ALL"|"OPTION_PUT"|"OPTION_CALL")
-        :type symbol: str
-        :param sort: sort ("VOLUME"|"TRADES"|"PERCENT_CHANGE_UP"|"PERCENT_CHANGE_DOWN")
-        :type sort: str
-        :param frequency: frequency (0|1|5|10|30|60)
-        :type frequency: int
-        :return: movers
-        :rtype: request.Response
-        """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/movers/{symbol}',
-                            headers={"accept": "application/json", 'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser({'sort': sort, 'frequency': frequency}),
-                            timeout=self.timeout)
+        Get movers in a specific index and direction.
 
-    def market_hours(self, symbols: list[str], date: datetime.datetime | str = None) -> requests.Response:
+        Args:
+            symbol (str): Symbol ("$DJI", "$COMPX", "$SPX", "NYSE", "NASDAQ", "OTCBB", "INDEX_ALL", "EQUITY_ALL", "OPTION_ALL", "OPTION_PUT", "OPTION_CALL").
+            sort (str, optional): Sort ("VOLUME", "TRADES", "PERCENT_CHANGE_UP", "PERCENT_CHANGE_DOWN").
+            frequency (int, optional): Frequency (0, 1, 5, 10, 30, 60).
+
+        Returns:
+            requests.Response: Movers.
+        """
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/movers/{symbol}',
+            headers={
+                'accept': 'application/json',
+                'Authorization': f'Bearer {self.tokens.access_token}',
+            },
+            params=self._params_parser({'sort': sort, 'frequency': frequency}),
+            timeout=self.timeout,
+        )
+
+    def market_hours(
+        self, symbols: list[str], date: datetime.datetime | str = None
+    ) -> requests.Response:
         """
         Get Market Hours for dates in the future across different markets.
-        :param symbols: list of market symbols ("equity", "option", "bond", "future", "forex")
-        :type symbols: list
-        :param date: date
-        :type date: datetime.pyi | str
-        :return: market hours
-        :rtype: request.Response
-        """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/markets',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser(
-                                {'markets': symbols, #self._format_list(symbols),
-                                 'date': self._time_convert(date, 'YYYY-MM-DD')}),
-                            timeout=self.timeout)
 
-    def market_hour(self, market_id: str, date: datetime.datetime | str = None) -> requests.Response:
+        Args:
+            symbols (list[str]): List of market symbols ("equity", "option", "bond", "future", "forex").
+            date (datetime.datetime | str, optional): Date.
+
+        Returns:
+            requests.Response: Market hours.
+        """
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/markets',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser(
+                {
+                    'markets': symbols,  # self._format_list(symbols),
+                    'date': self._time_convert(date, 'YYYY-MM-DD'),
+                }
+            ),
+            timeout=self.timeout,
+        )
+
+    def market_hour(
+        self, market_id: str, date: datetime.datetime | str = None
+    ) -> requests.Response:
         """
         Get Market Hours for dates in the future for a single market.
-        :param market_id: market id ("equity"|"option"|"bond"|"future"|"forex")
-        :type market_id: str
-        :param date: date
-        :type date: datetime.pyi | str
-        :return: market hours
-        :rtype: request.Response
+
+        Args:
+            market_id (str): Market id ("equity"|"option"|"bond"|"future"|"forex").
+            date (datetime.datetime | str, optional): Date.
+
+        Returns:
+            requests.Response: Market hours.
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/markets/{market_id}',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/markets/{market_id}',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
+            timeout=self.timeout,
+        )
 
     def instruments(self, symbol: str, projection: str) -> requests.Response:
         """
-        Get instruments for a list of symbols
-        :param symbol: symbol
-        :type symbol: str
-        :param projection: projection ("symbol-search"|"symbol-regex"|"desc-search"|"desc-regex"|"search"|"fundamental")
-        :type projection: str
-        :return: instruments
-        :rtype: request.Response
+        Get instruments for a list of symbols.
+
+        Args:
+            symbol (str): Symbol.
+            projection (str): Projection ("symbol-search", "symbol-regex", "desc-search", "desc-regex", "search", "fundamental").
+
+        Returns:
+            requests.Response: Instruments.
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/instruments',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            params={'symbol': symbol, 'projection': projection},
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/instruments',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            params={'symbol': symbol, 'projection': projection},
+            timeout=self.timeout,
+        )
 
     def instrument_cusip(self, cusip_id: str | int) -> requests.Response:
         """
-        Get instrument for a single cusip
-        :param cusip_id: cusip id
-        :type cusip_id: str|int
-        :return: instrument
-        :rtype: request.Response
+        Get instrument for a single cusip.
+
+        Args:
+            cusip_id (str | int): CUSIP ID.
+
+        Returns:
+            requests.Response: Instrument details.
         """
-        return requests.get(f'{self._base_api_url}/marketdata/v1/instruments/{cusip_id}',
-                            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-                            timeout=self.timeout)
+        return requests.get(
+            f'{self._base_api_url}/marketdata/v1/instruments/{cusip_id}',
+            headers={'Authorization': f'Bearer {self.tokens.access_token}'},
+            timeout=self.timeout,
+        )
