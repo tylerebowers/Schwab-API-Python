@@ -10,6 +10,7 @@ import urllib.parse
 
 import requests
 
+from .enums import TimeFormat
 from .stream import Stream
 from .tokens import Tokens
 
@@ -40,13 +41,18 @@ class Client:
                 'Timeout must be greater than 0 and is recommended to be 5 seconds or more.'
             )
 
+        self._logger = logging.getLogger('Schwabdev.Client')  # init the logger
+
+        if timeout < 5:
+            self._logger.warning('Timeout is set to less than 5 seconds. This may cause issues.')
+
         self.version = 'Schwabdev 2.4.4'  # version of the client
         self.timeout = timeout  # timeout to use in requests
         self.tokens = Tokens(
             self, app_key, app_secret, callback_url, tokens_file, update_tokens_auto
         )
         self.stream = Stream(self)  # init the streaming object
-        self._logger = logging.getLogger('Schwabdev.Client')  # init the logger
+
 
         self._logger.info('Client Initialization Complete')
 
@@ -54,7 +60,7 @@ class Client:
         """Removes None (null) values from the given dictionary.
 
         Args:
-            params (dict): The dictionary from which to remove None values.
+            params (dict): The dictionary to remove None values from.
 
         Returns:
             dict: The dictionary without None values.
@@ -65,35 +71,33 @@ class Client:
                 del params[key]
         return params
 
-    def _time_convert(self, dt=None, form='8601') -> str | None:
+    def _time_convert(self, dt=None, format: TimeFormat=TimeFormat.ISO_8601) -> str | int | None:
         """Convert time to correct format, passthrough if a string, preserve None if None for params parser.
 
         Args:
             dt (datetime.datetime | str | None): Datetime object to convert.
-            form (str): Format to convert input to. Options are "8601", "epoch", "epoch_ms", "YYYY-MM-DD".
+            form (TimeFormat): Format to convert input to.
 
         Returns:
             str | None: Converted time or passthrough.
         """
         if dt is None or not isinstance(dt, datetime.datetime):
             return dt
-        elif form == '8601':  # assume datetime object from here on
+        elif format == TimeFormat.ISO_8601:  # assume datetime object from here on
             return f"{dt.isoformat().split('+')[0][:-3]}Z"
-        elif form == 'epoch':
+        elif format == 'epoch':
             return int(dt.timestamp())
-        elif form == 'epoch_ms':
+        elif format == 'epoch_ms':
             return int(dt.timestamp() * 1000)
-        elif form == 'YYYY-MM-DD':
+        elif format == 'YYYY-MM-DD':
             return dt.strftime('%Y-%m-%d')
         else:
             return dt
 
     def _format_list(self, l: list | str | None) -> str | None:
-        """ Convert a Python list to a string or passthrough if already a string.
+        """Convert a Python list to a string or passthrough if already a string.
 
-        This method takes a list and converts it to a comma-separated string.
-        If the input is already a string, it returns the input unchanged.
-        If the input is None, it returns None.
+        i.e. ["a", "b"] -> "a,b"
 
         Args:
             l (list | str | None): The list to convert.
@@ -150,7 +154,7 @@ class Client:
             timeout=self.timeout,
         )
 
-    def account_details(self, accountHash: str, fields: str = None) -> requests.Response:
+    def account_details(self, accountHash: str, fields: str | None = None) -> requests.Response:
         """
         Specific account information with balances and positions.
 
@@ -175,8 +179,8 @@ class Client:
         accountHash: str,
         fromEnteredTime: datetime.datetime | str,
         toEnteredTime: datetime.datetime | str,
-        maxResults: int = None,
-        status: str = None,
+        maxResults: int | None = None,
+        status: str | None = None,
     ) -> requests.Response:
         """
         Retrieve all orders for a specific account.
@@ -205,8 +209,8 @@ class Client:
             params=self._params_parser(
                 {
                     'maxResults': maxResults,
-                    'fromEnteredTime': self._time_convert(fromEnteredTime, '8601'),
-                    'toEnteredTime': self._time_convert(toEnteredTime, '8601'),
+                    'fromEnteredTime': self._time_convert(fromEnteredTime, TimeFormat.ISO_8601),
+                    'toEnteredTime': self._time_convert(toEnteredTime, TimeFormat.ISO_8601),
                     'status': status,
                 }
             ),
@@ -273,7 +277,8 @@ class Client:
         """
         Replace an existing order for an account.
 
-        The existing order will be replaced by the new order. Once replaced, the old order will be canceled and a new order will be created.
+        The existing order will be replaced by the new order.
+        Once replaced, the old order will be canceled and a new order will be created.
 
         Args:
             accountHash (str): Account hash from account_linked().
@@ -298,8 +303,8 @@ class Client:
         self,
         fromEnteredTime: datetime.datetime | str,
         toEnteredTime: datetime.datetime | str,
-        maxResults: int = None,
-        status: str = None,
+        maxResults: int | None = None,
+        status: str | None = None,
     ) -> requests.Response:
         """
         Get all orders for all accounts.
@@ -325,8 +330,8 @@ class Client:
             params=self._params_parser(
                 {
                     'maxResults': maxResults,
-                    'fromEnteredTime': self._time_convert(fromEnteredTime, '8601'),
-                    'toEnteredTime': self._time_convert(toEnteredTime, '8601'),
+                    'fromEnteredTime': self._time_convert(fromEnteredTime, TimeFormat.ISO_8601),
+                    'toEnteredTime': self._time_convert(toEnteredTime, TimeFormat.ISO_8601),
                     'status': status,
                 }
             ),
@@ -347,7 +352,7 @@ class Client:
         startDate: datetime.datetime | str,
         endDate: datetime.datetime | str,
         types: str,
-        symbol: str = None,
+        symbol: str | None = None,
     ) -> requests.Response:
         """
         Retrieve all transactions for a specific account. Maximum number of transactions in response is 3000. Maximum date range is 1 year.
@@ -368,8 +373,8 @@ class Client:
             params=self._params_parser(
                 {
                     'accountNumber': accountHash,
-                    'startDate': self._time_convert(startDate, '8601'),
-                    'endDate': self._time_convert(endDate, '8601'),
+                    'startDate': self._time_convert(startDate, TimeFormat.ISO_8601),
+                    'endDate': self._time_convert(endDate, TimeFormat.ISO_8601),
                     'symbol': symbol,
                     'types': types,
                 }
@@ -413,7 +418,7 @@ class Client:
     """
 
     def quotes(
-        self, symbols: list[str] | str, fields: str = None, indicative: bool = False
+        self, symbols: list[str] | str, fields: str | None = None, indicative: bool = False
     ) -> requests.Response:
         """
         Get quotes for a list of tickers.
@@ -515,8 +520,8 @@ class Client:
                     'interval': interval,
                     'strike': strike,
                     'range': range,
-                    'fromDate': self._time_convert(fromDate, 'YYYY-MM-DD'),
-                    'toDate': self._time_convert(toDate, 'YYYY-MM-DD'),
+                    'fromDate': self._time_convert(fromDate, TimeFormat.YYYY_MM_DD),
+                    'toDate': self._time_convert(toDate, TimeFormat.YYYY_MM_DD),
                     'volatility': volatility,
                     'underlyingPrice': underlyingPrice,
                     'interestRate': interestRate,
@@ -585,8 +590,8 @@ class Client:
                     'period': period,
                     'frequencyType': frequencyType,
                     'frequency': frequency,
-                    'startDate': self._time_convert(startDate, 'epoch_ms'),
-                    'endDate': self._time_convert(endDate, 'epoch_ms'),
+                    'startDate': self._time_convert(startDate, TimeFormat.EPOCH_MS),
+                    'endDate': self._time_convert(endDate, TimeFormat.EPOCH_MS),
                     'needExtendedHoursData': needExtendedHoursData,
                     'needPreviousClose': needPreviousClose,
                 }
@@ -635,7 +640,7 @@ class Client:
             params=self._params_parser(
                 {
                     'markets': symbols,  # self._format_list(symbols),
-                    'date': self._time_convert(date, 'YYYY-MM-DD'),
+                    'date': self._time_convert(date, TimeFormat.YYYY_MM_DD),
                 }
             ),
             timeout=self.timeout,
@@ -657,7 +662,7 @@ class Client:
         return requests.get(
             f'{self._base_api_url}/marketdata/v1/markets/{market_id}',
             headers={'Authorization': f'Bearer {self.tokens.access_token}'},
-            params=self._params_parser({'date': self._time_convert(date, 'YYYY-MM-DD')}),
+            params=self._params_parser({'date': self._time_convert(date, TimeFormat.YYYY_MM_DD)}),
             timeout=self.timeout,
         )
 

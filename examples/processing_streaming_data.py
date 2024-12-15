@@ -25,7 +25,7 @@ client = schwabdev.Client(os.getenv('app_key'), os.getenv('app_secret'), os.gete
 streamer = client.stream
 
 # define a response handler
-shared_list:list[str] = []
+shared_list: list[str] = []
 
 
 def response_handler(message):

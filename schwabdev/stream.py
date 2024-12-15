@@ -10,11 +10,11 @@ import datetime
 import json
 import logging
 import threading
-import zoneinfo
 from time import sleep
 
 import websockets
 import websockets.exceptions
+import zoneinfo
 
 
 class Stream:
